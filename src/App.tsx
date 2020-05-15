@@ -1,17 +1,9 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
-// import './App.css';
+import styles from './App.module.css'; // Import css modules stylesheet as styles
 
 import React, { useCallback, useRef, useState } from 'react';
 
 import _ from 'lodash';
-import { nanoid } from 'nanoid'
 
-
-import { createStore, StoreProvider, action, computed, createTypedHooks, persist, Thunk, thunk } from 'easy-peasy';
-import { Action, Computed } from 'easy-peasy';
-// createComponentStore State Actions
-
-import styles from './App.module.css'; // Import css modules stylesheet as styles
 import clsx from 'clsx';
 
 import Button from 'react-bootstrap/Button';
@@ -30,168 +22,13 @@ import Accordion from 'react-bootstrap/Accordion';
 
 import { FaStar, FaAngleDoubleDown, FaAngleDoubleUp, FaRegStar, FaEye, FaDownload, FaUpload, FaSearch, FaArrowsAltH, FaTimes, } from 'react-icons/fa';
 
-enum WordType {
-  n = "n",
-  adj = "adj",
-  adv = "adv",
-  v = "v",
-  vt = "vt",
-  vi = "vi",
-}
+import appModel, { useStoreActions, useStoreDispatch, useStoreState } from './model';
+import { WordBookModel, WordModel } from './model';
 
-// *** Model
-interface WordModel {
-  id: string,
-  name: string,
-  starred: boolean,
-  type: string[],
-  bookmarked: boolean,
-  remark: string,
-  createdOn: number,
-};
-
-interface WordBookModel {
-  words: Array<WordModel>,
-  wordSize: Computed<WordBookModel, number>,
-
-  pointer: number,
-  offsetPointer: Action<WordBookModel, number>,
-
-  currentWord: Computed<WordBookModel, WordModel>,
-  toggleCurrentWordStarred: Action<WordBookModel>,
-  toggleCurrentWordBookmarked: Action<WordBookModel>,
-
-  deleteCurrentWord: Action<WordBookModel>,
-
-  saveWord: Action<WordBookModel, Partial<WordModel>>,
-
-  remarkVisible: boolean,
-  toggleRemarkVisible: Action<WordBookModel>,
-
-  searchFrameVisible: boolean,
-  toggleSearchFrameVisible: Action<WordBookModel>,
-
-  editor: WordEditorModel,
-  fillEditorWithCurrentWord: Action<WordBookModel>,
-
-  load: Action<WordBookModel, Partial<WordBookModel>>,
-  loadDefault: Thunk<WordBookModel>,
-};
-
-interface WordEditorModel {
-  fields: WordModel,
-  setValues: Action<WordEditorModel, Partial<WordModel>>,
-  clearValues: Action<WordEditorModel>,
-}
-
-interface AppModel {
-  wordbook: WordBookModel,
-};
-
-const createWordModel = () => {
-  return {
-    id: '',
-    starred: false,
-    type: [],
-    bookmarked: false,
-    name: '',
-    remark: '',
-    createdOn: 0,
-  };
-}
+import { StoreProvider, createStore, persist } from 'easy-peasy';
 
 // *** Store
 const store = (function initAppStore() {
-  const wordEditorModel: WordEditorModel = {
-    fields: createWordModel(),
-    setValues: action((state, payload) => {
-      _.assign(state.fields, payload);
-    }),
-    clearValues: action((state) => {
-      _.assign(state.fields, createWordModel());
-    })
-  };
-
-  const appModel: AppModel = {
-    wordbook: {
-      words: new Array<WordModel>(),
-      pointer: -1,
-
-      wordSize: computed((state) => {
-        return state.words.length;
-      }),
-      currentWord: computed((state) => {
-        // console.log('current word is ', state.words, state.pointer);
-        return state.words[state.pointer];
-      }),
-      offsetPointer: action((state, value) => {
-        const p = state.pointer + value;
-        state.pointer = Math.max(Math.min(p, state.words.length - 1), 0);
-      }),
-      deleteCurrentWord: action((state) => {
-        state.words.splice(state.pointer, 1);
-        state.pointer = Math.max(Math.min(state.pointer, state.words.length - 1), 0);
-      }),
-      saveWord: action((state, newWord) => {
-        if (_.isEmpty(newWord.name)) {
-          return;
-        }
-        const pExist = _.findIndex(state.words, (item) => {
-          return item.name === newWord.name;
-        });
-        if (pExist >= 0) {
-          state.pointer = pExist;
-          if (newWord.remark) {
-            state.words[pExist].remark = newWord.remark;
-          }
-        } else {
-          state.words.push({
-            id: nanoid(),
-            name: newWord.name || '',
-            starred: false,
-            bookmarked: false,
-            type: [],
-            remark: newWord.remark || '',
-            createdOn: Date.now(),
-          });
-          state.pointer = state.words.length - 1;
-        }
-      }),
-      toggleCurrentWordStarred: action((state) => {
-        state.words[state.pointer].starred = !state.words[state.pointer].starred;
-      }),
-      toggleCurrentWordBookmarked: action((state) => {
-        state.words[state.pointer].bookmarked = !state.words[state.pointer].bookmarked;
-      }),
-
-      remarkVisible: true,
-      searchFrameVisible: true,
-      toggleRemarkVisible: action((state) => {
-        state.remarkVisible = !state.remarkVisible;
-      }),
-      toggleSearchFrameVisible: action((state) => {
-        state.searchFrameVisible = !state.searchFrameVisible;
-      }),
-
-      editor: wordEditorModel,
-      fillEditorWithCurrentWord: action((state) => {
-        state.editor.fields.name = state.currentWord.name;
-        state.editor.fields.remark = state.currentWord.remark;
-      }),
-
-      load: action((state, doc) => {
-        state.words = doc.words || [];
-        state.pointer = 0;
-      }),
-      loadDefault: thunk((actions, payload, helper) => {
-        if (helper.getState().wordSize === 0) {
-          actions.saveWord({ name: 'fluter', remark: 'fluter detail example' });
-          actions.saveWord({ name: 'resolute', remark: 'resolute detail example' });
-          actions.saveWord({ name: 'cardigan', remark: 'cardigan detail example' });
-        }
-      }),
-    }
-  };
   const store = createStore(persist(
     appModel,
     {
@@ -203,11 +40,6 @@ const store = (function initAppStore() {
 })();
 
 // *** Component
-const typedHooks = createTypedHooks<AppModel>();
-export const useStoreActions = typedHooks.useStoreActions;
-export const useStoreDispatch = typedHooks.useStoreDispatch;
-export const useStoreState = typedHooks.useStoreState;
-
 type WbWordCardProps = {
   word: WordModel,
   remarkVisible?: boolean;
@@ -294,12 +126,9 @@ type WbWordBookViewerProps = {
 }
 
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
-  const word = useStoreState((state) => {
-    return state.wordbook.currentWord;
-  });
-  const remarkVisible = useStoreState((state) => {
-    return state.wordbook.remarkVisible;
-  });
+  const word = useStoreState((state) => state.wordbook.currentWord);
+  const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
+
   const toggleWordStarred = useStoreActions((actions) => actions.wordbook.toggleCurrentWordStarred);
   const toggleWordBookmarked = useStoreActions((actions) => actions.wordbook.toggleCurrentWordBookmarked);
   const fillEditorWithCurrentWord = useStoreActions((actions) => actions.wordbook.fillEditorWithCurrentWord);
@@ -415,12 +244,15 @@ const WbWordBookViewControl = () => {
   const remarkVisible = useStoreState(state => state.wordbook.remarkVisible);
   const toggleRemarkVisible = useStoreActions(actions => actions.wordbook.toggleRemarkVisible);
 
+  const filterStarred = useStoreState(state => state.wordbook.filterStarred);
+  const toggleFilterStarred = useStoreActions(actions => actions.wordbook.toggleFilterStarred);
+
   return (
     <ToggleButtonGroup type="checkbox" size="lg">
       <ToggleButton variant="outline-success" checked={remarkVisible} value="remarkVisible" onChange={() => toggleRemarkVisible()}>
         <FaEye />
       </ToggleButton>
-      <ToggleButton variant="outline-success" checked={remarkVisible} value="starredFilter" onChange={() => toggleRemarkVisible()}>
+      <ToggleButton variant="outline-success" checked={filterStarred} value="filterStarred" onChange={() => toggleFilterStarred()}>
         <FaStar />
       </ToggleButton>
     </ToggleButtonGroup>
@@ -502,9 +334,7 @@ const WbWordBook = () => {
   const frameRef = useRef(null);
   const [accordionKey, setAccordionKey] = useState('0');
 
-  const searchFrameVisible = useStoreState((state) => {
-    return state.wordbook.searchFrameVisible;
-  });
+  const searchFrameVisible = useStoreState((state) => state.wordbook.searchFrameVisible);
 
   const searchWordCallback = useCallback((name) => {
     const url = `https://dictionary.cambridge.org/dictionary/english/${name}`
