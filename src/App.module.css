@@ -1,4 +1,4 @@
-.App {
+/* .App {
   text-align: center;
 }
 
@@ -35,4 +35,35 @@
   to {
     transform: rotate(360deg);
   }
+} */
+
+.WbWordCard_remark {
+  min-height: 3rem;
+}
+
+.WbWord_searchFrame {
+  width: 100%;
+  height: 99vh;
+}
+
+.WbWordCard__title {
+  cursor: pointer;
+}
+
+.WbWordBookNav__pagination {
+  justify-content: center;
+}
+
+.WbWordCard__deleteButton {
+  position: absolute;
+  right: 1rem;
+}
+
+.WbWordBookViewer__WordCard {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.WbWordBook__WordEditor {
+  margin-top: 1rem;
 }
