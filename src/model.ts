@@ -1,8 +1,11 @@
 import { nanoid } from 'nanoid'
 import _ from 'lodash';
 
-import { action, computed, createTypedHooks, Thunk, thunk } from 'easy-peasy';
+import { action, computed, createTypedHooks, Thunk, thunk, State } from 'easy-peasy';
 import { Action, Computed } from 'easy-peasy';
+
+import log from 'loglevel';
+log.setDefaultLevel('debug');
 
 // *** Model
 export interface WordModel {
@@ -16,16 +19,17 @@ export interface WordModel {
 };
 
 export interface WordBookModel {
-  words: Array<WordModel>,
+  _words: Array<WordModel>,
 
   filterStarred: boolean,
   toggleFilterStarred: Action<WordBookModel>,
-  wordSize: Computed<WordBookModel, number>,
+  currentWords: Computed<WordBookModel, Array<WordModel>>,
+  currentWordSize: Computed<WordBookModel, number>,
 
   pointer: number,
   offsetPointer: Action<WordBookModel, number>,
 
-  currentWord: Computed<WordBookModel, WordModel>,
+  currentWord: Computed<WordBookModel, WordModel | null>,
   toggleCurrentWordStarred: Action<WordBookModel>,
   toggleCurrentWordBookmarked: Action<WordBookModel>,
   deleteCurrentWord: Action<WordBookModel>,
@@ -79,93 +83,134 @@ const createWordEditorModel = () => {
   return model;
 };
 
-const createAppModel = () => {
-  const appModel: AppModel = {
-    wordbook: {
-      words: new Array<WordModel>(),
-      pointer: -1,
+const createWordBookModel = () => {
+  // const findWordIndex = (state: State<WordBookModel>, word: WordModel) => {
+  //   return _.findIndex(state._words, item => item.id === word.id);
+  // };
+  const getFilteredWords = (state: State<WordBookModel>) => {
+    if (state.filterStarred) {
+      return _.filter(state._words, w => w.starred);
+    } else {
+      return state._words;
+    }
+  }
+  const setNewPointer = (state: State<WordBookModel>, p?: number) => {
+    const filterWordSize = getFilteredWords(state).length;
+    state.pointer = Math.max(Math.min(p === undefined ? 1e8 : p, filterWordSize - 1), 0);
+  }
+  const getCurrentWord = (state: State<WordBookModel>) => {
+    if (state.pointer >= 0) {
+      return getFilteredWords(state)[state.pointer];
+    } else {
+      return null;
+    }
+  }
 
-      wordSize: computed((state) => {
-        return state.words.length;
-      }),
-      currentWord: computed((state) => {
-        // console.log('current word is ', state.words, state.pointer);
-        return state.words[state.pointer];
-      }),
-      offsetPointer: action((state, value) => {
-        const p = state.pointer + value;
-        state.pointer = Math.max(Math.min(p, state.words.length - 1), 0);
-      }),
-      deleteCurrentWord: action((state) => {
-        state.words.splice(state.pointer, 1);
-        state.pointer = Math.max(Math.min(state.pointer, state.words.length - 1), 0);
-      }),
-      saveWord: action((state, newWord) => {
-        if (_.isEmpty(newWord.name)) {
-          return;
+  const wordbookModel: WordBookModel = {
+    filterStarred: false,
+    toggleFilterStarred: action((state) => {
+      state.filterStarred = !state.filterStarred;
+      state.pointer = 0; // go back to the first item
+    }),
+
+    _words: new Array<WordModel>(),
+    currentWords: computed((state) => {
+      return getFilteredWords(state);
+    }),
+    currentWordSize: computed((state) => {
+      return getFilteredWords(state).length;
+    }),
+
+    pointer: -1,
+    currentWord: computed((state) => {
+      return getCurrentWord(state);
+    }),
+    offsetPointer: action((state, value) => {
+      setNewPointer(state, state.pointer + value);
+    }),
+
+    deleteCurrentWord: action((state) => {
+      // const p = findWordIndex(state, state.currentWord);
+      // state._words.splice(p, 1);
+      // state.pointer = Math.max(Math.min(p, state.currentWordSize - 1), 0);
+    }),
+    toggleCurrentWordStarred: action((state) => {
+      const word = getCurrentWord(state);
+      if (word) {
+        word.starred = !word.starred;
+      }
+    }),
+    toggleCurrentWordBookmarked: action((state) => {
+      const word = getCurrentWord(state);
+      if (word) {
+        word.bookmarked = !word.bookmarked;
+      }
+    }),
+
+    saveWord: action((state, newWord) => {
+      if (_.isEmpty(newWord.name)) {
+        return;
+      }
+      const pExist = _.findIndex(state._words, (item) => {
+        return item.name === newWord.name;
+      });
+      if (pExist >= 0) {
+        state.pointer = pExist;
+        if (newWord.remark) {
+          state._words[pExist].remark = newWord.remark;
         }
-        const pExist = _.findIndex(state.words, (item) => {
-          return item.name === newWord.name;
+      } else {
+        state._words.push({
+          id: nanoid(),
+          name: newWord.name || '',
+          starred: false,
+          bookmarked: false,
+          type: [],
+          remark: newWord.remark || '',
+          createdOn: Date.now(),
         });
-        if (pExist >= 0) {
-          state.pointer = pExist;
-          if (newWord.remark) {
-            state.words[pExist].remark = newWord.remark;
-          }
-        } else {
-          state.words.push({
-            id: nanoid(),
-            name: newWord.name || '',
-            starred: false,
-            bookmarked: false,
-            type: [],
-            remark: newWord.remark || '',
-            createdOn: Date.now(),
-          });
-          state.pointer = state.words.length - 1;
-        }
-      }),
-      toggleCurrentWordStarred: action((state) => {
-        state.words[state.pointer].starred = !state.words[state.pointer].starred;
-      }),
-      toggleCurrentWordBookmarked: action((state) => {
-        state.words[state.pointer].bookmarked = !state.words[state.pointer].bookmarked;
-      }),
+        setNewPointer(state);
+        // log.info('save-word, state.pointer', state.pointer, state.currentWord, state.currentWordSize);
+      }
+    }),
 
-      remarkVisible: true,
-      toggleRemarkVisible: action((state) => {
-        state.remarkVisible = !state.remarkVisible;
-      }),
+    remarkVisible: true,
+    toggleRemarkVisible: action((state) => {
+      state.remarkVisible = !state.remarkVisible;
+    }),
 
-      searchFrameVisible: true,
-      toggleSearchFrameVisible: action((state) => {
-        state.searchFrameVisible = !state.searchFrameVisible;
-      }),
+    searchFrameVisible: true,
+    toggleSearchFrameVisible: action((state) => {
+      state.searchFrameVisible = !state.searchFrameVisible;
+    }),
 
-      filterStarred: false,
-      toggleFilterStarred: action((state) => {
-        state.filterStarred = !state.filterStarred;
-      }),
+    editor: createWordEditorModel(),
 
-      editor: createWordEditorModel(),
-
-      fillEditorWithCurrentWord: action((state) => {
+    fillEditorWithCurrentWord: action((state) => {
+      if (state.currentWord) {
         state.editor.fields.name = state.currentWord.name;
         state.editor.fields.remark = state.currentWord.remark;
-      }),
+      }
+    }),
 
-      load: action((state, doc) => {
-        state.words = doc.words || [];
-        state.pointer = 0;
-      }),
-      loadDefault: thunk((actions, payload, helper) => {
-        if (helper.getState().wordSize === 0) {
-          actions.saveWord({ name: 'fluter', remark: 'fluter detail example' });
-          actions.saveWord({ name: 'resolute', remark: 'resolute detail example' });
-          actions.saveWord({ name: 'cardigan', remark: 'cardigan detail example' });
-        }
-      }),
-    }
+    load: action((state, doc) => {
+      state._words = doc._words || (doc as any).words || [];
+      state.pointer = 0;
+    }),
+    loadDefault: thunk((actions, payload, helper) => {
+      if (helper.getState()._words.length === 0) {
+        actions.saveWord({ name: 'fluster', remark: 'fluster detail example' });
+        actions.saveWord({ name: 'resolute', remark: 'resolute detail example' });
+        actions.saveWord({ name: 'cardigan', remark: 'cardigan detail example' });
+      }
+    }),
+  };
+  return wordbookModel;
+}
+
+const createAppModel = () => {
+  const appModel: AppModel = {
+    wordbook: createWordBookModel()
   };
   return appModel;
 }

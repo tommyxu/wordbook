@@ -33,9 +33,12 @@ const store = (function initAppStore() {
     appModel,
     {
       storage: 'localStorage',
+      // mergeStrategy: 'mergeDeep',
     }
   ));
   store.getActions().wordbook.loadDefault();
+  console.log(store.getState());
+
   return store;
 })();
 
@@ -106,7 +109,7 @@ const WbStarToggler = (props: WbStarTogglerProps) => {
 
 const WbWordBookNav = () => {
   const pointer = useStoreState((state) => state.wordbook.pointer);
-  const wordSize = useStoreState((state) => state.wordbook.wordSize);
+  const wordSize = useStoreState((state) => state.wordbook.currentWordSize);
   const offsetPointer = useStoreActions((state) => state.wordbook.offsetPointer);
   return (
     <Pagination size="lg" className={clsx('mb-0', styles.WbWordBookNav__pagination)}>
@@ -127,6 +130,7 @@ type WbWordBookViewerProps = {
 
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
+  console.log('current word', word);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
 
   const toggleWordStarred = useStoreActions((actions) => actions.wordbook.toggleCurrentWordStarred);
@@ -141,13 +145,15 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   return (
     <div>
       <div className={styles.WbWordBookViewer__WordCard}>
-        <WbWordCard
-          word={word} remarkVisible={remarkVisible}
-          onToggleBookmarked={toggleBookmarkedCallback}
-          onToggleStarred={toggleStarredCallback}
-          onWordClicked={workClickedCallback}
-          onDelete={deleteCallback}
-        />
+        {word && (
+          <WbWordCard
+            word={word} remarkVisible={remarkVisible}
+            onToggleBookmarked={toggleBookmarkedCallback}
+            onToggleStarred={toggleStarredCallback}
+            onWordClicked={workClickedCallback}
+            onDelete={deleteCallback}
+          />
+        )}
       </div>
       <div className="d-flex align-items-center align-self-center">
         <div className="flex-fill">
@@ -247,12 +253,19 @@ const WbWordBookViewControl = () => {
   const filterStarred = useStoreState(state => state.wordbook.filterStarred);
   const toggleFilterStarred = useStoreActions(actions => actions.wordbook.toggleFilterStarred);
 
+  const optionChecked = [];
+  if (remarkVisible) {
+    optionChecked.push("remarkVisible");
+  }
+  if (filterStarred) {
+    optionChecked.push("filterStarred");
+  }
   return (
-    <ToggleButtonGroup type="checkbox" size="lg">
-      <ToggleButton variant="outline-success" checked={remarkVisible} value="remarkVisible" onChange={() => toggleRemarkVisible()}>
+    <ToggleButtonGroup type="checkbox" size="lg" value={optionChecked}>
+      <ToggleButton variant="outline-success" value="remarkVisible" onChange={() => toggleRemarkVisible()}>
         <FaEye />
       </ToggleButton>
-      <ToggleButton variant="outline-success" checked={filterStarred} value="filterStarred" onChange={() => toggleFilterStarred()}>
+      <ToggleButton variant="outline-success" value="filterStarred" onChange={() => toggleFilterStarred()}>
         <FaStar />
       </ToggleButton>
     </ToggleButtonGroup>
