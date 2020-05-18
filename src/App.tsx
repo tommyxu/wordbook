@@ -37,8 +37,6 @@ const store = (function initAppStore() {
     }
   ));
   store.getActions().wordbook.loadDefault();
-  console.log(store.getState());
-
   return store;
 })();
 
@@ -130,7 +128,6 @@ type WbWordBookViewerProps = {
 
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
-  console.log('current word', word);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
 
   const toggleWordStarred = useStoreActions((actions) => actions.wordbook.toggleCurrentWordStarred);

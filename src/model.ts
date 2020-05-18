@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid'
 import _ from 'lodash';
 
-import { action, computed, createTypedHooks, Thunk, thunk, State } from 'easy-peasy';
-import { Action, Computed } from 'easy-peasy';
+import { action, computed, createTypedHooks, thunk, thunkOn, actionOn } from 'easy-peasy';
+import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from 'easy-peasy';
 
 import log from 'loglevel';
 log.setDefaultLevel('debug');
@@ -19,6 +19,9 @@ export interface WordModel {
 };
 
 export interface WordBookModel {
+  version: number,
+  increaseVersion: Action<WordBookModel>,
+
   _words: Array<WordModel>,
 
   filterStarred: boolean,
@@ -30,6 +33,7 @@ export interface WordBookModel {
   offsetPointer: Action<WordBookModel, number>,
 
   currentWord: Computed<WordBookModel, WordModel | null>,
+
   toggleCurrentWordStarred: Action<WordBookModel>,
   toggleCurrentWordBookmarked: Action<WordBookModel>,
   deleteCurrentWord: Action<WordBookModel>,
@@ -47,6 +51,8 @@ export interface WordBookModel {
 
   load: Action<WordBookModel, Partial<WordBookModel>>,
   loadDefault: Thunk<WordBookModel>,
+
+  sync: ThunkOn<WordBookModel>,
 };
 
 export interface WordEditorModel {
@@ -84,9 +90,9 @@ const createWordEditorModel = () => {
 };
 
 const createWordBookModel = () => {
-  // const findWordIndex = (state: State<WordBookModel>, word: WordModel) => {
-  //   return _.findIndex(state._words, item => item.id === word.id);
-  // };
+  const findWordIndex = (state: State<WordBookModel>, word: WordModel) => {
+    return _.findIndex(state._words, item => item.id === word.id);
+  };
   const getFilteredWords = (state: State<WordBookModel>) => {
     if (state.filterStarred) {
       return _.filter(state._words, w => w.starred);
@@ -107,6 +113,11 @@ const createWordBookModel = () => {
   }
 
   const wordbookModel: WordBookModel = {
+    version: 0,
+    increaseVersion: action((state) => {
+      state.version++;
+    }),
+
     filterStarred: false,
     toggleFilterStarred: action((state) => {
       state.filterStarred = !state.filterStarred;
@@ -130,9 +141,10 @@ const createWordBookModel = () => {
     }),
 
     deleteCurrentWord: action((state) => {
-      // const p = findWordIndex(state, state.currentWord);
-      // state._words.splice(p, 1);
-      // state.pointer = Math.max(Math.min(p, state.currentWordSize - 1), 0);
+      const cw = getCurrentWord(state);
+      const wIndex = findWordIndex(state, cw!);
+      state._words.splice(wIndex, 1);
+      setNewPointer(state, state.pointer);
     }),
     toggleCurrentWordStarred: action((state) => {
       const word = getCurrentWord(state);
@@ -146,7 +158,6 @@ const createWordBookModel = () => {
         word.bookmarked = !word.bookmarked;
       }
     }),
-
     saveWord: action((state, newWord) => {
       if (_.isEmpty(newWord.name)) {
         return;
@@ -170,7 +181,6 @@ const createWordBookModel = () => {
           createdOn: Date.now(),
         });
         setNewPointer(state);
-        // log.info('save-word, state.pointer', state.pointer, state.currentWord, state.currentWordSize);
       }
     }),
 
@@ -204,7 +214,22 @@ const createWordBookModel = () => {
         actions.saveWord({ name: 'cardigan', remark: 'cardigan detail example' });
       }
     }),
+
+    sync: thunkOn(
+      actions => [
+        // actions.toggleFilterStarred,
+        // actions.offsetPointer,
+        // actions.toggleCurrentWordBookmarked,
+        actions.toggleCurrentWordStarred,
+        actions.deleteCurrentWord,
+        actions.saveWord,
+      ],
+      async (actions, target) => {
+        actions.increaseVersion();
+      }
+    )
   };
+
   return wordbookModel;
 }
 
