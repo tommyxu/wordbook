@@ -1,5 +1,7 @@
 import styles from "./App.module.css";
 
+import { hot } from "react-hot-loader/root";
+
 import React, { useCallback, useRef, useState } from "react";
 
 /** @jsx jsx */
@@ -145,7 +147,7 @@ const WbWordBookNav = () => {
       <Pagination.First onClick={() => offsetPointer(-1e5)} />
       <Pagination.Prev onClick={() => offsetPointer(-1)} />
       <PageItem disabled>
-        {pointer + 1}/{wordSize}
+        {pointer + 1} / {wordSize}
       </PageItem>
       <Pagination.Next onClick={() => offsetPointer(1)} />
       <Pagination.Last onClick={() => offsetPointer(1e5)} />
@@ -531,4 +533,4 @@ function App() {
   );
 }
 
-export default App;
+export default hot(App);
