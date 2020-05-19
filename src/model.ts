@@ -1,81 +1,88 @@
-import { nanoid } from 'nanoid'
-import _ from 'lodash';
+import { nanoid } from "nanoid";
+import _ from "lodash";
 
-import { action, computed, createTypedHooks, thunk, thunkOn, actionOn } from 'easy-peasy';
-import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from 'easy-peasy';
+import {
+  action,
+  computed,
+  createTypedHooks,
+  thunk,
+  thunkOn,
+  actionOn,
+} from "easy-peasy";
+import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from "easy-peasy";
 
-import log from 'loglevel';
-log.setDefaultLevel('debug');
+import log from "loglevel";
+log.setDefaultLevel("debug");
 
 // *** Model
 export interface WordModel {
-  id: string,
-  name: string,
-  starred: boolean,
-  type: string[],
-  bookmarked: boolean,
-  remark: string,
-  createdOn: number,
-};
+  id: string;
+  name: string;
+  starred: boolean;
+  type: string[];
+  bookmarked: boolean;
+  remark: string;
+  createdOn: number;
+}
 
 export interface WordBookModel {
-  version: number,
-  increaseVersion: Action<WordBookModel>,
+  version: number;
+  increaseVersion: Action<WordBookModel>;
 
-  _words: Array<WordModel>,
+  _words: Array<WordModel>;
 
-  filterStarred: boolean,
-  toggleFilterStarred: Action<WordBookModel>,
-  currentWords: Computed<WordBookModel, Array<WordModel>>,
-  currentWordSize: Computed<WordBookModel, number>,
+  filterStarred: boolean;
+  toggleFilterStarred: Action<WordBookModel>;
+  currentWords: Computed<WordBookModel, Array<WordModel>>;
+  currentWordSize: Computed<WordBookModel, number>;
 
-  pointer: number,
-  offsetPointer: Action<WordBookModel, number>,
+  pointer: number;
+  offsetPointer: Action<WordBookModel, number>;
 
-  currentWord: Computed<WordBookModel, WordModel | null>,
+  currentWord: Computed<WordBookModel, WordModel | null>;
 
-  toggleCurrentWordStarred: Action<WordBookModel>,
-  toggleCurrentWordBookmarked: Action<WordBookModel>,
-  deleteCurrentWord: Action<WordBookModel>,
+  toggleCurrentWordStarred: Action<WordBookModel>;
+  toggleCurrentWordBookmarked: Action<WordBookModel>;
+  deleteCurrentWord: Action<WordBookModel>;
 
-  saveWord: Action<WordBookModel, Partial<WordModel>>,
+  saveWord: Action<WordBookModel, Partial<WordModel>>;
 
-  remarkVisible: boolean,
-  toggleRemarkVisible: Action<WordBookModel>,
+  remarkVisible: boolean;
+  toggleRemarkVisible: Action<WordBookModel>;
 
-  searchFrameVisible: boolean,
-  toggleSearchFrameVisible: Action<WordBookModel>,
+  searchFrameVisible: boolean;
+  toggleSearchFrameVisible: Action<WordBookModel>;
 
-  editor: WordEditorModel,
-  fillEditorWithCurrentWord: Action<WordBookModel>,
+  editor: WordEditorModel;
+  fillEditorWithCurrentWord: Action<WordBookModel>;
 
-  load: Action<WordBookModel, Partial<WordBookModel>>,
-  loadDefault: Thunk<WordBookModel>,
+  load: Action<WordBookModel, Partial<WordBookModel>>;
+  loadDefault: Thunk<WordBookModel>;
 
-  sync: ThunkOn<WordBookModel>,
-};
+  sync: ThunkOn<WordBookModel>;
+}
 
 export interface WordEditorModel {
-  fields: WordModel,
-  setValues: Action<WordEditorModel, Partial<WordModel>>,
-  clearValues: Action<WordEditorModel>,
+  fields: WordModel;
+  setValues: Action<WordEditorModel, Partial<WordModel>>;
+  clearValues: Action<WordEditorModel>;
 }
 
 export interface AppModel {
-  wordbook: WordBookModel,
-};
+  wordbook: WordBookModel;
+}
 
 const createWordModel = () => {
   return {
-    id: '',
+    id: "",
     starred: false,
     type: [],
     bookmarked: false,
-    name: '',
-    remark: '',
+    name: "",
+    remark: "",
     createdOn: 0,
   };
-}
+};
 const createWordEditorModel = () => {
   const model: WordEditorModel = {
     fields: createWordModel(),
@@ -84,33 +91,36 @@ const createWordEditorModel = () => {
     }),
     clearValues: action((state) => {
       _.assign(state.fields, createWordModel());
-    })
+    }),
   };
   return model;
 };
 
 const createWordBookModel = () => {
   const findWordIndex = (state: State<WordBookModel>, word: WordModel) => {
-    return _.findIndex(state._words, item => item.id === word.id);
+    return _.findIndex(state._words, (item) => item.id === word.id);
   };
   const getFilteredWords = (state: State<WordBookModel>) => {
     if (state.filterStarred) {
-      return _.filter(state._words, w => w.starred);
+      return _.filter(state._words, (w) => w.starred);
     } else {
       return state._words;
     }
-  }
+  };
   const setNewPointer = (state: State<WordBookModel>, p?: number) => {
     const filterWordSize = getFilteredWords(state).length;
-    state.pointer = Math.max(Math.min(p === undefined ? 1e8 : p, filterWordSize - 1), 0);
-  }
+    state.pointer = Math.max(
+      Math.min(p === undefined ? 1e8 : p, filterWordSize - 1),
+      0
+    );
+  };
   const getCurrentWord = (state: State<WordBookModel>) => {
     if (state.pointer >= 0) {
       return getFilteredWords(state)[state.pointer];
     } else {
       return null;
     }
-  }
+  };
 
   const wordbookModel: WordBookModel = {
     version: 0,
@@ -173,11 +183,11 @@ const createWordBookModel = () => {
       } else {
         state._words.push({
           id: nanoid(),
-          name: newWord.name || '',
+          name: newWord.name || "",
           starred: false,
           bookmarked: false,
           type: [],
-          remark: newWord.remark || '',
+          remark: newWord.remark || "",
           createdOn: Date.now(),
         });
         setNewPointer(state);
@@ -195,7 +205,6 @@ const createWordBookModel = () => {
     }),
 
     editor: createWordEditorModel(),
-
     fillEditorWithCurrentWord: action((state) => {
       if (state.currentWord) {
         state.editor.fields.name = state.currentWord.name;
@@ -209,14 +218,20 @@ const createWordBookModel = () => {
     }),
     loadDefault: thunk((actions, payload, helper) => {
       if (helper.getState()._words.length === 0) {
-        actions.saveWord({ name: 'fluster', remark: 'fluster detail example' });
-        actions.saveWord({ name: 'resolute', remark: 'resolute detail example' });
-        actions.saveWord({ name: 'cardigan', remark: 'cardigan detail example' });
+        actions.saveWord({ name: "fluster", remark: "fluster detail example" });
+        actions.saveWord({
+          name: "resolute",
+          remark: "resolute detail example",
+        });
+        actions.saveWord({
+          name: "cardigan",
+          remark: "cardigan detail example",
+        });
       }
     }),
 
     sync: thunkOn(
-      actions => [
+      (actions) => [
         // actions.toggleFilterStarred,
         // actions.offsetPointer,
         // actions.toggleCurrentWordBookmarked,
@@ -227,18 +242,18 @@ const createWordBookModel = () => {
       async (actions, target) => {
         actions.increaseVersion();
       }
-    )
+    ),
   };
 
   return wordbookModel;
-}
+};
 
 const createAppModel = () => {
   const appModel: AppModel = {
-    wordbook: createWordBookModel()
+    wordbook: createWordBookModel(),
   };
   return appModel;
-}
+};
 
 // createComponentStore State Actions
 
