@@ -1,9 +1,11 @@
-import styles from "./App.module.css"; // Import css modules stylesheet as styles
+import styles from "./App.module.css";
 
 import React, { useCallback, useRef, useState } from "react";
 
-import _ from "lodash";
+/** @jsx jsx */
+import { jsx, css } from "@emotion/core";
 
+import _ from "lodash";
 import clsx from "clsx";
 
 import Button from "react-bootstrap/Button";
@@ -69,7 +71,11 @@ const WbWordCard = (props: WbWordCardProps) => {
   return (
     <Card>
       <Card.Body>
-        <Card.Title className={styles.WbWordCard__title}>
+        <Card.Title
+          css={{
+            cursor: "pointer",
+          }}
+        >
           <Button
             variant="light"
             onClick={() => props.onDelete()}
