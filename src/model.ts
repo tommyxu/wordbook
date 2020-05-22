@@ -161,6 +161,8 @@ const createWordBookModel = () => {
       if (word) {
         word.starred = !word.starred;
       }
+      // this operation might cause star array reseting and pointer reset
+      setNewPointer(state, state.pointer);
     }),
     toggleCurrentWordBookmarked: action((state) => {
       const word = getCurrentWord(state);
