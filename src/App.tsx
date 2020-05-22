@@ -100,7 +100,9 @@ const WbWordCard = (props: WbWordCardProps) => {
 
         {/* <Card.Subtitle className="mb-2 text-muted">Card Subtitle</Card.Subtitle> */}
         <Card.Text className={styles.WbWordCard_remark}>
-          {remarkVisible && <span>{word.remark}</span>}
+          {remarkVisible && (
+            <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
+          )}
         </Card.Text>
 
         {/* <Card.Link href="#">Card Link</Card.Link>

@@ -225,7 +225,15 @@ const createWordBookModel = () => {
     }),
 
     load: action((state, doc) => {
-      state._words = doc._words || (doc as any).words || [];
+      const input = doc._words || (doc as any).words || [];
+      const content = _.forEach(input, (w: WordModel) => {
+        if (w.stars === undefined) {
+          w.stars = w.starred ? 1 : 0;
+        }
+        w.remark = _.trim(w.remark);
+        w.name = _.trim(w.name);
+      });
+      state._words = content;
       state.pointer = 0;
     }),
     loadDefault: thunk((actions, payload, helper) => {
