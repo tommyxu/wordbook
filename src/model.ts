@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import _ from "lodash";
+import log from "loglevel";
 
 import {
   action,
@@ -11,13 +12,11 @@ import {
 } from "easy-peasy";
 import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from "easy-peasy";
 
-import log from "loglevel";
-log.setDefaultLevel("debug");
-
 // *** Model
 export interface WordModel {
   id: string;
   name: string;
+  stars: number;
   starred: boolean;
   type: string[];
   bookmarked: boolean;
@@ -42,6 +41,7 @@ export interface WordBookModel {
   currentWord: Computed<WordBookModel, WordModel | null>;
 
   toggleCurrentWordStarred: Action<WordBookModel>;
+  setCurrentWordStars: Action<WordBookModel, number>;
   toggleCurrentWordBookmarked: Action<WordBookModel>;
   deleteCurrentWord: Action<WordBookModel>;
 
@@ -75,6 +75,7 @@ export interface AppModel {
 const createWordModel = () => {
   return {
     id: "",
+    stars: 0,
     starred: false,
     type: [],
     bookmarked: false,
@@ -160,9 +161,22 @@ const createWordBookModel = () => {
       const word = getCurrentWord(state);
       if (word) {
         word.starred = !word.starred;
+        // this operation might cause star array reseting and pointer reset
+        setNewPointer(state, state.pointer);
       }
-      // this operation might cause star array reseting and pointer reset
-      setNewPointer(state, state.pointer);
+    }),
+    setCurrentWordStars: action((state, stars: number) => {
+      const word = getCurrentWord(state);
+      if (word) {
+        word.stars = stars;
+        if (word.stars > 0) {
+          word.starred = true;
+        } else {
+          word.starred = false;
+        }
+        // this operation might cause star array reseting and pointer reset
+        setNewPointer(state, state.pointer);
+      }
     }),
     toggleCurrentWordBookmarked: action((state) => {
       const word = getCurrentWord(state);
@@ -183,15 +197,11 @@ const createWordBookModel = () => {
           state._words[pExist].remark = newWord.remark;
         }
       } else {
-        state._words.push({
-          id: nanoid(),
-          name: newWord.name || "",
-          starred: false,
-          bookmarked: false,
-          type: [],
-          remark: newWord.remark || "",
-          createdOn: Date.now(),
-        });
+        const nw = createWordModel();
+        nw.id = nanoid();
+        nw.name = newWord.name || "<missed>";
+        nw.remark = newWord.remark || "<missed>";
+        state._words.push(nw);
         setNewPointer(state);
       }
     }),

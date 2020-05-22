@@ -5,7 +5,9 @@ import { hot } from "react-hot-loader/root";
 import React, { useCallback, useRef, useState } from "react";
 
 /** @jsx jsx */
-import { jsx, css } from "@emotion/core";
+import { jsx } from "@emotion/core";
+
+import log from "loglevel";
 
 import _ from "lodash";
 import clsx from "clsx";
@@ -62,10 +64,14 @@ const store = (function initAppStore() {
 type WbWordCardProps = {
   word: WordModel;
   remarkVisible?: boolean;
+
+  onWordClick: () => void;
+  onDelete: () => void;
+
+  onStarsChange: (numStars: number) => void;
+
   onToggleStarred: () => void;
   onToggleBookmarked: () => void;
-  onWordClicked: () => void;
-  onDelete: () => void;
 };
 
 const WbWordCard = (props: WbWordCardProps) => {
@@ -86,7 +92,7 @@ const WbWordCard = (props: WbWordCardProps) => {
             <FaTimes />
           </Button>
           <div className="d-flex align-items-center">
-            <span className="h1" onClick={() => props.onWordClicked()}>
+            <span className="h1" onClick={() => props.onWordClick()}>
               {word.name}
             </span>
           </div>
@@ -106,27 +112,94 @@ const WbWordCard = (props: WbWordCardProps) => {
           <FaBook />
         </ToggleButton> */}
         <div className={clsx("d-flex", "flex-row-reverse")}>
-          <WbStarToggler
-            checked={word.starred}
-            onClick={props.onToggleStarred}
-          />
+          <WbStarRater stars={word.stars} onStarsChange={props.onStarsChange} />
         </div>
       </Card.Body>
     </Card>
   );
 };
 
-interface WbStarTogglerProps {
-  checked: boolean;
-  onClick?: () => void;
+interface WbStarRaterProps {
+  stars: number;
+  onStarsChange: (value: number) => void;
 }
 
+const WbStarRaterStyles = {
+  toggler: {
+    paddingLeft: 0,
+  },
+};
+
+const WbStarRater = (props: WbStarRaterProps) => {
+  const { stars, onStarsChange } = props;
+  const onStarClicked = useCallback(
+    ({ name }) => {
+      const sId = _.toSafeInteger(name);
+      if (stars === 1 && sId === 1) {
+        onStarsChange(0);
+      } else {
+        onStarsChange(sId);
+      }
+    },
+    [onStarsChange, props]
+  );
+  return (
+    <span>
+      <WbStarToggler
+        name={"3"}
+        checked={stars > 2}
+        onClick={onStarClicked}
+        css={WbStarRaterStyles.toggler}
+      />
+      <WbStarToggler
+        name={"2"}
+        checked={stars > 1}
+        onClick={onStarClicked}
+        css={WbStarRaterStyles.toggler}
+      />
+      <WbStarToggler
+        name={"1"}
+        checked={stars > 0}
+        onClick={onStarClicked}
+        css={WbStarRaterStyles.toggler}
+      />
+    </span>
+  );
+};
+
+interface WbStarTogglerProps {
+  name?: string;
+  className?: string;
+  checked: boolean;
+  onClick?: (evt: { name?: string }) => void;
+}
+
+const WbStarTogglerStyles = {
+  icon: (props: WbStarTogglerProps) =>
+    !props.checked
+      ? {
+          opacity: 0.4,
+        }
+      : {},
+};
+
 const WbStarToggler = (props: WbStarTogglerProps) => {
-  const { checked } = props;
+  const { checked, className, name, onClick } = props;
+  const clickCallback = useCallback(() => {
+    if (onClick) {
+      onClick({ name });
+    }
+  }, [onClick]);
   return (
     <span
-      className={clsx("btn", checked ? "text-warning" : "text-secondary")}
-      onClick={props.onClick}
+      className={clsx(
+        className,
+        "btn",
+        checked ? "text-warning" : "text-muted",
+        { "text-secondary": !checked }
+      )}
+      css={WbStarTogglerStyles.icon(props)}
+      onClick={clickCallback}
     >
       <h4>{checked ? <FaStar /> : <FaRegStar />}</h4>
     </span>
@@ -164,6 +237,9 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const toggleWordStarred = useStoreActions(
     (actions) => actions.wordbook.toggleCurrentWordStarred
   );
+  const setCurrentWordStars = useStoreActions(
+    (state) => state.wordbook.setCurrentWordStars
+  );
   const toggleWordBookmarked = useStoreActions(
     (actions) => actions.wordbook.toggleCurrentWordBookmarked
   );
@@ -185,6 +261,9 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const deleteCallback = useCallback(() => deleteCurrentWord(), [
     deleteCurrentWord,
   ]);
+  const changeStars = useCallback((value) => {
+    setCurrentWordStars(value);
+  }, []);
 
   return (
     <div>
@@ -195,8 +274,9 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
             remarkVisible={remarkVisible}
             onToggleBookmarked={toggleBookmarkedCallback}
             onToggleStarred={toggleStarredCallback}
-            onWordClicked={workClickedCallback}
+            onWordClick={workClickedCallback}
             onDelete={deleteCallback}
+            onStarsChange={changeStars}
           />
         )}
       </div>
