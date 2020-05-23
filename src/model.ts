@@ -192,7 +192,7 @@ const createWordBookModel = () => {
         return item.name === newWord.name;
       });
       if (pExist >= 0) {
-        state.pointer = pExist;
+        // state.pointer = pExist;
         if (newWord.remark) {
           state._words[pExist].remark = newWord.remark;
         }

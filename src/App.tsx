@@ -1,13 +1,12 @@
 import styles from "./App.module.css";
 
-import { hot } from "react-hot-loader/root";
-
 import React, { useCallback, useRef, useState } from "react";
 
 /** @jsx jsx */
 import { jsx } from "@emotion/core";
+import { hot } from "react-hot-loader/root";
 
-import log from "loglevel";
+// import log from "loglevel";
 
 import _ from "lodash";
 import clsx from "clsx";
