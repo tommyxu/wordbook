@@ -66,10 +66,7 @@ type WbWordCardProps = {
 
   onWordClick: () => void;
   onDelete: () => void;
-
   onStarsChange: (numStars: number) => void;
-
-  onToggleStarred: () => void;
   onToggleBookmarked: () => void;
 };
 
@@ -235,9 +232,6 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
 
-  const toggleWordStarred = useStoreActions(
-    (actions) => actions.wordbook.toggleCurrentWordStarred
-  );
   const setCurrentWordStars = useStoreActions(
     (state) => state.wordbook.setCurrentWordStars
   );
@@ -250,9 +244,6 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const deleteCurrentWord = useStoreActions(
     (state) => state.wordbook.deleteCurrentWord
   );
-  const toggleStarredCallback = useCallback(() => toggleWordStarred(), [
-    toggleWordStarred,
-  ]);
   const toggleBookmarkedCallback = useCallback(() => toggleWordBookmarked(), [
     toggleWordBookmarked,
   ]);
@@ -274,7 +265,6 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
             word={word}
             remarkVisible={remarkVisible}
             onToggleBookmarked={toggleBookmarkedCallback}
-            onToggleStarred={toggleStarredCallback}
             onWordClick={workClickedCallback}
             onDelete={deleteCallback}
             onStarsChange={changeStars}

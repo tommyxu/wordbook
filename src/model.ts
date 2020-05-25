@@ -25,6 +25,8 @@ export interface WordModel {
 }
 
 export interface WordBookModel {
+  spec: string;
+
   version: number;
   increaseVersion: Action<WordBookModel>;
 
@@ -40,7 +42,7 @@ export interface WordBookModel {
 
   currentWord: Computed<WordBookModel, WordModel | null>;
 
-  toggleCurrentWordStarred: Action<WordBookModel>;
+  // toggleCurrentWordStarred: Action<WordBookModel>;
   setCurrentWordStars: Action<WordBookModel, number>;
   toggleCurrentWordBookmarked: Action<WordBookModel>;
   deleteCurrentWord: Action<WordBookModel>;
@@ -124,6 +126,8 @@ const createWordBookModel = () => {
   };
 
   const wordbookModel: WordBookModel = {
+    spec: "wordbook/1",
+
     version: 0,
     increaseVersion: action((state) => {
       state.version++;
@@ -157,14 +161,14 @@ const createWordBookModel = () => {
       state._words.splice(wIndex, 1);
       setNewPointer(state, state.pointer);
     }),
-    toggleCurrentWordStarred: action((state) => {
-      const word = getCurrentWord(state);
-      if (word) {
-        word.starred = !word.starred;
-        // this operation might cause star array reseting and pointer reset
-        setNewPointer(state, state.pointer);
-      }
-    }),
+    // toggleCurrentWordStarred: action((state) => {
+    //   const word = getCurrentWord(state);
+    //   if (word) {
+    //     word.starred = !word.starred;
+    //     // this operation might cause star array reseting and pointer reset
+    //     setNewPointer(state, state.pointer);
+    //   }
+    // }),
     setCurrentWordStars: action((state, stars: number) => {
       const word = getCurrentWord(state);
       if (word) {
@@ -254,8 +258,7 @@ const createWordBookModel = () => {
       (actions) => [
         // actions.toggleFilterStarred,
         // actions.offsetPointer,
-        // actions.toggleCurrentWordBookmarked,
-        actions.toggleCurrentWordStarred,
+        actions.setCurrentWordStars,
         actions.deleteCurrentWord,
         actions.saveWord,
       ],
