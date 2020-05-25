@@ -24,6 +24,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import Pagination from "react-bootstrap/Pagination";
 import PageItem from "react-bootstrap/PageItem";
 import Accordion from "react-bootstrap/Accordion";
+import Toast from "react-bootstrap/Toast";
 
 import {
   FaStar,
@@ -36,6 +37,7 @@ import {
   FaSearch,
   FaArrowsAltH,
   FaTimes,
+  FaSync,
 } from "react-icons/fa";
 
 import appModel, {
@@ -437,6 +439,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   const toggleSearchFrameVisible = useStoreActions(
     (actions) => actions.wordbook.toggleSearchFrameVisible
   );
+  const syncData = useStoreActions((actions) => actions.wordbook.syncData);
 
   const downloadFile = () => {
     const data = store.getState().wordbook;
@@ -472,7 +475,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
       reader.onload = function (evt) {
         const text = (evt.target!.result as any) as string;
         const content = JSON.parse(text);
-        console.log(content);
+        // console.log(content);
         loadAction(content);
       };
       // reader.onerror = function (evt) {
@@ -485,6 +488,9 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   return (
     <div className={className}>
       <ButtonGroup size="lg">
+        <Button variant="outline-dark" onClick={() => syncData()}>
+          <FaSync />
+        </Button>
         <Button variant="outline-dark" onClick={downloadFile}>
           <FaDownload />
         </Button>
@@ -512,12 +518,25 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
 
 const WbWordBook = () => {
   const frameRef = useRef(null);
+
   const [accordionKey, setAccordionKey] = useState("0");
+  const wordEditorToggleCallback = useCallback(
+    (evt) => {
+      setAccordionKey(accordionKey === "0" ? "1" : "0");
+    },
+    [setAccordionKey, accordionKey]
+  );
+
+  const notificationVisible = useStoreState(
+    (state) => state.wordbook.notificationVisible
+  );
+  const setNotificationVisible = useStoreActions(
+    (actions) => actions.wordbook.setNotificationVisible
+  );
 
   const searchFrameVisible = useStoreState(
     (state) => state.wordbook.searchFrameVisible
   );
-
   const searchWordCallback = useCallback(
     (name) => {
       const url = `https://dictionary.cambridge.org/dictionary/english/${name}`;
@@ -527,17 +546,42 @@ const WbWordBook = () => {
     [frameRef]
   );
 
-  const wordEditorToggleCallback = useCallback(
-    (evt) => {
-      setAccordionKey(accordionKey === "0" ? "1" : "0");
-    },
-    [setAccordionKey, accordionKey]
-  );
-
   return (
     <Container fluid>
       <Row>
-        <Col></Col>
+        <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
+          <div
+            css={{
+              position: "relative",
+            }}
+          >
+            <div
+              css={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                zIndex: 100,
+              }}
+              className="d-flex justify-content-center"
+            >
+              <Toast
+                onClose={() => setNotificationVisible(false)}
+                show={notificationVisible}
+                // delay={3000}
+                // autohide
+                css={{
+                  minWidth: "30rem",
+                }}
+              >
+                <Toast.Header>
+                  <strong className="mr-auto">Synced</strong>
+                  <small>just now</small>
+                </Toast.Header>
+                <Toast.Body>Total {1} words</Toast.Body>
+              </Toast>
+            </div>
+          </div>
+        </Col>
       </Row>
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>

@@ -22,6 +22,7 @@ export interface WordModel {
   bookmarked: boolean;
   remark: string;
   createdOn: number;
+  lastModified: number;
 }
 
 export interface WordBookModel {
@@ -55,12 +56,16 @@ export interface WordBookModel {
   searchFrameVisible: boolean;
   toggleSearchFrameVisible: Action<WordBookModel>;
 
+  notificationVisible: boolean;
+  setNotificationVisible: Action<WordBookModel, boolean>;
+
   editor: WordEditorModel;
   fillEditorWithCurrentWord: Action<WordBookModel>;
 
   load: Action<WordBookModel, Partial<WordBookModel>>;
   loadDefault: Thunk<WordBookModel>;
 
+  syncData: Thunk<WordBookModel>;
   sync: ThunkOn<WordBookModel>;
 }
 
@@ -83,9 +88,11 @@ const createWordModel = () => {
     bookmarked: false,
     name: "",
     remark: "",
-    createdOn: 0,
+    createdOn: new Date().getTime(),
+    lastModified: new Date().getTime(),
   };
 };
+
 const createWordEditorModel = () => {
   const model: WordEditorModel = {
     fields: createWordModel(),
@@ -130,7 +137,7 @@ const createWordBookModel = () => {
 
     version: 0,
     increaseVersion: action((state) => {
-      state.version++;
+      state.version = new Date().getTime();
     }),
 
     filterStarred: false,
@@ -195,16 +202,18 @@ const createWordBookModel = () => {
       const pExist = _.findIndex(state._words, (item) => {
         return item.name === newWord.name;
       });
+      // if the old word is found, just update
       if (pExist >= 0) {
-        // state.pointer = pExist;
         if (newWord.remark) {
           state._words[pExist].remark = newWord.remark;
+          state._words[pExist].lastModified = new Date().getTime();
         }
       } else {
         const nw = createWordModel();
         nw.id = nanoid();
         nw.name = newWord.name || "<missed>";
         nw.remark = newWord.remark || "<missed>";
+        nw.createdOn = 0;
         state._words.push(nw);
         setNewPointer(state);
       }
@@ -220,6 +229,12 @@ const createWordBookModel = () => {
       state.searchFrameVisible = !state.searchFrameVisible;
     }),
 
+    notificationVisible: false,
+    setNotificationVisible: action((state, visible) => {
+      log.info("set note visible");
+      state.notificationVisible = visible;
+    }),
+
     editor: createWordEditorModel(),
     fillEditorWithCurrentWord: action((state) => {
       if (state.currentWord) {
@@ -229,17 +244,30 @@ const createWordBookModel = () => {
     }),
 
     load: action((state, doc) => {
-      const input = doc._words || (doc as any).words || [];
-      const content = _.forEach(input, (w: WordModel) => {
-        if (w.stars === undefined) {
-          w.stars = w.starred ? 1 : 0;
-        }
-        w.remark = _.trim(w.remark);
-        w.name = _.trim(w.name);
-      });
-      state._words = content;
-      state.pointer = 0;
+      if (doc.spec?.startsWith("wordbook/") && doc._words) {
+        const input = doc._words!;
+        // regularize the input document
+        const content = _.forEach(input, (w: WordModel) => {
+          if (w.stars === undefined) {
+            w.stars = w.starred ? 1 : 0;
+          }
+          w.remark = _.trim(w.remark);
+          w.name = _.trim(w.name);
+          if (w.createdOn === 0 || w.createdOn === undefined) {
+            w.createdOn = new Date().getTime();
+          }
+          if (w.lastModified === 0 || w.lastModified === undefined) {
+            w.lastModified = w.createdOn;
+          }
+        });
+        state._words = content;
+        log.info("load words, size: ", content.length);
+        state.pointer = 0;
+      } else {
+        log.error("unknown document. cannot merge.");
+      }
     }),
+
     loadDefault: thunk((actions, payload, helper) => {
       if (helper.getState()._words.length === 0) {
         actions.saveWord({ name: "fluster", remark: "fluster detail example" });
@@ -254,10 +282,28 @@ const createWordBookModel = () => {
       }
     }),
 
+    syncData: thunk(async (actions, payload, helper) => {
+      // load section
+      // const resp = await fetch("/api/state");
+      // const remoteDoc = await resp.json();
+      // actions.load(remoteDoc);
+
+      // save section
+      const resp = await fetch("/api/state", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(helper.getState()),
+      });
+      const remote = await resp.json();
+      log.info(remote.status);
+    }),
+
     sync: thunkOn(
       (actions) => [
-        // actions.toggleFilterStarred,
         // actions.offsetPointer,
+        // actions.setCurrentWordStars,
         actions.setCurrentWordStars,
         actions.deleteCurrentWord,
         actions.saveWord,
