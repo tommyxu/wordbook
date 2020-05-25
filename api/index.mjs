@@ -7,6 +7,7 @@ log.setDefaultLevel("debug");
 
 const dataDir = "./data";
 const dataFile = "state.json";
+const specPattern = "wordbook/";
 
 var app = express();
 app.use(express.json());
@@ -23,7 +24,7 @@ app.post("/api/state", async (req, res) => {
   if (req.body) {
     const state = req.body;
     const spec = state.spec;
-    if (spec && spec.startsWith("wordbook/")) {
+    if (spec && spec.startsWith(specPattern)) {
       await fs.writeFile(
         path.join(dataDir, dataFile),
         JSON.stringify(req.body, undefined, 2)
