@@ -6,7 +6,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { jsx } from "@emotion/core";
 import { hot } from "react-hot-loader/root";
 
-// import log from "loglevel";
+import log from "loglevel";
 
 import _ from "lodash";
 import clsx from "clsx";
@@ -25,7 +25,7 @@ import Pagination from "react-bootstrap/Pagination";
 import PageItem from "react-bootstrap/PageItem";
 import Accordion from "react-bootstrap/Accordion";
 import Toast from "react-bootstrap/Toast";
-
+import Modal from "react-bootstrap/Modal";
 import {
   FaStar,
   FaAngleDoubleDown,
@@ -37,7 +37,8 @@ import {
   FaSearch,
   FaArrowsAltH,
   FaTimes,
-  FaSync,
+  FaCloudUploadAlt,
+  FaCloudDownloadAlt,
 } from "react-icons/fa";
 
 import appModel, {
@@ -255,9 +256,12 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const deleteCallback = useCallback(() => deleteCurrentWord(), [
     deleteCurrentWord,
   ]);
-  const changeStars = useCallback((value) => {
-    setCurrentWordStars(value);
-  }, []);
+  const changeStars = useCallback(
+    (value) => {
+      setCurrentWordStars(value);
+    },
+    [setCurrentWordStars]
+  );
 
   return (
     <div>
@@ -435,11 +439,18 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   const { className } = props;
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const wordbookDirty = useStoreState((actions) => actions.wordbook.dirty);
   const loadAction = useStoreActions((actions) => actions.wordbook.load);
   const toggleSearchFrameVisible = useStoreActions(
     (actions) => actions.wordbook.toggleSearchFrameVisible
   );
-  const syncData = useStoreActions((actions) => actions.wordbook.syncData);
+
+  const handleDialogAction = useStoreActions(
+    (actions) => actions.wordbook.handleDialogAction
+  );
+  const cloudDownload = useStoreActions(
+    (actions) => actions.wordbook.cloudDownload
+  );
 
   const downloadFile = () => {
     const data = store.getState().wordbook;
@@ -488,9 +499,17 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   return (
     <div className={className}>
       <ButtonGroup size="lg">
-        <Button variant="outline-dark" onClick={() => syncData()}>
-          <FaSync />
+        <Button variant="outline-dark" onClick={() => cloudDownload()}>
+          <FaCloudDownloadAlt />
         </Button>
+        <Button
+          variant={wordbookDirty ? "outline-dark" : "outline-secondary"}
+          onClick={() => handleDialogAction("show")}
+        >
+          <FaCloudUploadAlt />
+        </Button>
+      </ButtonGroup>
+      <ButtonGroup size="lg">
         <Button variant="outline-dark" onClick={downloadFile}>
           <FaDownload />
         </Button>
@@ -510,8 +529,6 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
         onChange={uploadFile}
         className={"d-none"}
       />
-      {/* <Form.File /> */}
-      {/* <FormFileInput /> */}
     </div>
   );
 };
@@ -546,8 +563,29 @@ const WbWordBook = () => {
     [frameRef]
   );
 
+  const confirmDialogVisible = useStoreState(
+    (state) => state.wordbook.uiState.confirmDialogVisible
+  );
+  const setConfirmDialogVisible = useStoreActions(
+    (actions) => actions.wordbook.uiState.setConfirmDialogVisible
+  );
+  const handleConfirmDialogAction = useStoreActions(
+    (actions) => actions.wordbook.handleDialogAction
+  );
+
   return (
     <Container fluid>
+      <Row>
+        <Col>
+          <ConfirmDialog
+            show={confirmDialogVisible}
+            title="Warning"
+            message="Uploading to the cloud will overwrite the server copy. Continue?"
+            onHide={() => setConfirmDialogVisible(false)}
+            onAction={(actionKey) => handleConfirmDialogAction(actionKey)}
+          />
+        </Col>
+      </Row>
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
           <div
@@ -585,7 +623,9 @@ const WbWordBook = () => {
       </Row>
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
-          <WbWordBookOps className={clsx("d-flex justify-content-end mt-3")} />
+          <WbWordBookOps
+            className={clsx("d-flex justify-content-between mt-3")}
+          />
           <WbWordBookViewer />
           <div className={styles.WbWordBook__WordEditor}>
             <Accordion activeKey={accordionKey}>
@@ -621,6 +661,50 @@ const WbWordBook = () => {
         )}
       </Row>
     </Container>
+  );
+};
+
+interface ConfirmDialogProps {
+  show: boolean;
+  title: string;
+  message: string;
+  yesPrompt?: string;
+  noPrompt?: string;
+  onHide?: () => void;
+  onAction?: (actionKey: string) => void;
+}
+
+const ConfirmDialog = (props: ConfirmDialogProps) => {
+  const { title, message, yesPrompt, noPrompt, show, onAction, onHide } = props;
+  return (
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>{title}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>{message}</p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button
+          variant="secondary"
+          onClick={() => onAction?.("no")}
+          css={{
+            minWidth: "5rem",
+          }}
+        >
+          {noPrompt || "No"}
+        </Button>
+        <Button
+          variant="primary"
+          onClick={() => onAction?.("yes")}
+          css={{
+            minWidth: "5rem",
+          }}
+        >
+          {yesPrompt || "Yes"}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };
 

@@ -28,6 +28,9 @@ export interface WordModel {
 export interface WordBookModel {
   spec: string;
 
+  dirty: boolean;
+  setDirty: Action<WordBookModel, boolean>;
+
   version: number;
   increaseVersion: Action<WordBookModel>;
 
@@ -65,8 +68,23 @@ export interface WordBookModel {
   load: Action<WordBookModel, Partial<WordBookModel>>;
   loadDefault: Thunk<WordBookModel>;
 
-  syncData: Thunk<WordBookModel>;
-  sync: ThunkOn<WordBookModel>;
+  cloudUpload: Thunk<WordBookModel>;
+  cloudDownload: Thunk<WordBookModel>;
+
+  autoSetDirty: ThunkOn<WordBookModel>;
+
+  uiState: WordBookUiState;
+  handleDialogAction: Thunk<WordBookModel, string>;
+}
+
+// export interface DialogActionPayload {
+//   topic: string;
+//   action: string;
+// }
+
+export interface WordBookUiState {
+  confirmDialogVisible: boolean;
+  setConfirmDialogVisible: Action<WordBookUiState, boolean>;
 }
 
 export interface WordEditorModel {
@@ -135,9 +153,15 @@ const createWordBookModel = () => {
   const wordbookModel: WordBookModel = {
     spec: "wordbook/1",
 
+    dirty: false,
+    setDirty: action((state, flag) => {
+      state.dirty = flag;
+    }),
+
     version: 0,
     increaseVersion: action((state) => {
       state.version = new Date().getTime();
+      state.dirty = true;
     }),
 
     filterStarred: false,
@@ -282,13 +306,13 @@ const createWordBookModel = () => {
       }
     }),
 
-    syncData: thunk(async (actions, payload, helper) => {
-      // load section
-      // const resp = await fetch("/api/state");
-      // const remoteDoc = await resp.json();
-      // actions.load(remoteDoc);
+    cloudDownload: thunk(async (actions, payload, helper) => {
+      const resp = await fetch("/api/state");
+      const remoteDoc = await resp.json();
+      actions.load(remoteDoc);
+    }),
 
-      // save section
+    cloudUpload: thunk(async (actions, payload, helper) => {
       const resp = await fetch("/api/state", {
         method: "POST",
         headers: {
@@ -297,13 +321,14 @@ const createWordBookModel = () => {
         body: JSON.stringify(helper.getState()),
       });
       const remote = await resp.json();
-      log.info(remote.status);
+      if (remote.status === "ok") {
+        actions.setDirty(false);
+      }
     }),
 
-    sync: thunkOn(
+    autoSetDirty: thunkOn(
       (actions) => [
         // actions.offsetPointer,
-        // actions.setCurrentWordStars,
         actions.setCurrentWordStars,
         actions.deleteCurrentWord,
         actions.saveWord,
@@ -312,6 +337,27 @@ const createWordBookModel = () => {
         actions.increaseVersion();
       }
     ),
+
+    uiState: {
+      confirmDialogVisible: true,
+      setConfirmDialogVisible: action((state, visible) => {
+        state.confirmDialogVisible = visible;
+      }),
+    },
+
+    handleDialogAction: thunk(async (actions, actionKey, helper) => {
+      switch (actionKey) {
+        case "show":
+          actions.uiState.setConfirmDialogVisible(true);
+          break;
+        case "yes":
+          actions.uiState.setConfirmDialogVisible(false);
+          actions.cloudUpload();
+        case "no":
+          actions.uiState.setConfirmDialogVisible(false);
+          break;
+      }
+    }),
   };
 
   return wordbookModel;
