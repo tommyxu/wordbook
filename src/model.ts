@@ -56,12 +56,6 @@ export interface WordBookModel {
   remarkVisible: boolean;
   toggleRemarkVisible: Action<WordBookModel>;
 
-  searchFrameVisible: boolean;
-  toggleSearchFrameVisible: Action<WordBookModel>;
-
-  notificationVisible: boolean;
-  setNotificationVisible: Action<WordBookModel, boolean>;
-
   editor: WordEditorModel;
   fillEditorWithCurrentWord: Action<WordBookModel>;
 
@@ -85,6 +79,12 @@ export interface WordBookModel {
 export interface WordBookUiState {
   confirmDialogVisible: boolean;
   setConfirmDialogVisible: Action<WordBookUiState, boolean>;
+
+  searchFrameVisible: boolean;
+  toggleSearchFrameVisible: Action<WordBookUiState>;
+
+  notificationVisible: boolean;
+  setNotificationVisible: Action<WordBookUiState, boolean>;
 }
 
 export interface WordEditorModel {
@@ -248,17 +248,6 @@ const createWordBookModel = () => {
       state.remarkVisible = !state.remarkVisible;
     }),
 
-    searchFrameVisible: true,
-    toggleSearchFrameVisible: action((state) => {
-      state.searchFrameVisible = !state.searchFrameVisible;
-    }),
-
-    notificationVisible: false,
-    setNotificationVisible: action((state, visible) => {
-      log.info("set note visible");
-      state.notificationVisible = visible;
-    }),
-
     editor: createWordEditorModel(),
     fillEditorWithCurrentWord: action((state) => {
       if (state.currentWord) {
@@ -339,9 +328,18 @@ const createWordBookModel = () => {
     ),
 
     uiState: {
-      confirmDialogVisible: true,
+      confirmDialogVisible: false,
       setConfirmDialogVisible: action((state, visible) => {
         state.confirmDialogVisible = visible;
+      }),
+      searchFrameVisible: true,
+      toggleSearchFrameVisible: action((state) => {
+        state.searchFrameVisible = !state.searchFrameVisible;
+      }),
+      notificationVisible: false,
+      setNotificationVisible: action((state, visible) => {
+        log.info("set note visible");
+        state.notificationVisible = visible;
       }),
     },
 

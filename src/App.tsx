@@ -442,7 +442,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   const wordbookDirty = useStoreState((actions) => actions.wordbook.dirty);
   const loadAction = useStoreActions((actions) => actions.wordbook.load);
   const toggleSearchFrameVisible = useStoreActions(
-    (actions) => actions.wordbook.toggleSearchFrameVisible
+    (actions) => actions.wordbook.uiState.toggleSearchFrameVisible
   );
 
   const handleDialogAction = useStoreActions(
@@ -545,14 +545,14 @@ const WbWordBook = () => {
   );
 
   const notificationVisible = useStoreState(
-    (state) => state.wordbook.notificationVisible
+    (state) => state.wordbook.uiState.notificationVisible
   );
   const setNotificationVisible = useStoreActions(
-    (actions) => actions.wordbook.setNotificationVisible
+    (actions) => actions.wordbook.uiState.setNotificationVisible
   );
 
   const searchFrameVisible = useStoreState(
-    (state) => state.wordbook.searchFrameVisible
+    (state) => state.wordbook.uiState.searchFrameVisible
   );
   const searchWordCallback = useCallback(
     (name) => {
@@ -588,19 +588,12 @@ const WbWordBook = () => {
       </Row>
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
-          <div
-            css={{
-              position: "relative",
-            }}
-          >
+          <div className="position-relative">
             <div
+              className="d-flex justify-content-center position-absolute l0 r0"
               css={{
-                position: "absolute",
-                left: 0,
-                right: 0,
                 zIndex: 100,
               }}
-              className="d-flex justify-content-center"
             >
               <Toast
                 onClose={() => setNotificationVisible(false)}
@@ -627,7 +620,7 @@ const WbWordBook = () => {
             className={clsx("d-flex justify-content-between mt-3")}
           />
           <WbWordBookViewer />
-          <div className={styles.WbWordBook__WordEditor}>
+          <div className="mt-3">
             <Accordion activeKey={accordionKey}>
               <div className="text-center">
                 <Accordion.Toggle
