@@ -36,4 +36,6 @@ app.post("/api/state", async (req, res) => {
   }
 });
 
+app.use(express.static("./build"));
+
 app.listen(3010);
