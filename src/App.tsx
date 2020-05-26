@@ -235,24 +235,29 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
 
-  const setCurrentWordStars = useStoreActions(
-    (state) => state.wordbook.setCurrentWordStars
-  );
   const toggleWordBookmarked = useStoreActions(
     (actions) => actions.wordbook.toggleCurrentWordBookmarked
   );
-  const fillEditorWithCurrentWord = useStoreActions(
-    (actions) => actions.wordbook.fillEditorWithCurrentWord
+  const setCurrentWordStars = useStoreActions(
+    (state) => state.wordbook.setCurrentWordStars
   );
   const deleteCurrentWord = useStoreActions(
     (state) => state.wordbook.deleteCurrentWord
   );
+  const fillEditorWithCurrentWord = useStoreActions(
+    (actions) => actions.wordbook.fillEditorWithCurrentWord
+  );
+  const setEditorCollapsed = useStoreActions(
+    (actions) => actions.wordbook.uiState.setEditorCollapsed
+  );
+
   const toggleBookmarkedCallback = useCallback(() => toggleWordBookmarked(), [
     toggleWordBookmarked,
   ]);
-  const workClickedCallback = useCallback(() => fillEditorWithCurrentWord(), [
-    fillEditorWithCurrentWord,
-  ]);
+  const workClickedCallback = useCallback(() => {
+    fillEditorWithCurrentWord();
+    setEditorCollapsed(true);
+  }, [fillEditorWithCurrentWord, setEditorCollapsed]);
   const deleteCallback = useCallback(() => deleteCurrentWord(), [
     deleteCurrentWord,
   ]);
@@ -536,12 +541,17 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
 const WbWordBook = () => {
   const frameRef = useRef(null);
 
-  const [accordionKey, setAccordionKey] = useState("0");
+  const editorCollapsed = useStoreState(
+    (state) => state.wordbook.uiState.editorCollapsed
+  );
+  const setEditorCollapsed = useStoreActions(
+    (actions) => actions.wordbook.uiState.setEditorCollapsed
+  );
   const wordEditorToggleCallback = useCallback(
     (evt) => {
-      setAccordionKey(accordionKey === "0" ? "1" : "0");
+      setEditorCollapsed(!editorCollapsed);
     },
-    [setAccordionKey, accordionKey]
+    [setEditorCollapsed, editorCollapsed]
   );
 
   const notificationVisible = useStoreState(
@@ -620,23 +630,23 @@ const WbWordBook = () => {
             className={clsx("d-flex justify-content-between mt-3")}
           />
           <WbWordBookViewer />
-          <div className="mt-3">
-            <Accordion activeKey={accordionKey}>
+          <div className="mt-4">
+            <Accordion activeKey={"" + editorCollapsed}>
               <div className="text-center">
                 <Accordion.Toggle
                   as={Button}
                   variant="link"
-                  eventKey="1"
+                  eventKey="true"
                   onClick={wordEditorToggleCallback}
                 >
-                  {accordionKey === "0" ? (
+                  {!editorCollapsed ? (
                     <FaAngleDoubleDown />
                   ) : (
                     <FaAngleDoubleUp />
                   )}
                 </Accordion.Toggle>
               </div>
-              <Accordion.Collapse eventKey="1">
+              <Accordion.Collapse eventKey="true">
                 <WbWordEditor onSearch={searchWordCallback} />
               </Accordion.Collapse>
             </Accordion>

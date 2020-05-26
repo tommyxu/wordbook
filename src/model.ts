@@ -85,6 +85,9 @@ export interface WordBookUiState {
 
   notificationVisible: boolean;
   setNotificationVisible: Action<WordBookUiState, boolean>;
+
+  editorCollapsed: boolean;
+  setEditorCollapsed: Action<WordBookUiState, boolean>;
 }
 
 export interface WordEditorModel {
@@ -338,8 +341,12 @@ const createWordBookModel = () => {
       }),
       notificationVisible: false,
       setNotificationVisible: action((state, visible) => {
-        log.info("set note visible");
         state.notificationVisible = visible;
+      }),
+      editorCollapsed: false,
+      setEditorCollapsed: action((state, collapsed) => {
+        state.editorCollapsed = collapsed;
+        log.info("set note visible", collapsed);
       }),
     },
 
