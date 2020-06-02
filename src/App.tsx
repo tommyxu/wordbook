@@ -106,9 +106,6 @@ const WbWordCard = (props: WbWordCardProps) => {
 
         {/* <Card.Link href="#">Card Link</Card.Link>
         <Card.Link href="#">Another Link</Card.Link> */}
-        {/* <ToggleButton checked={word.starred} type="checkbox" value="starred" variant="outline-warning" size="lg" onChange={props.onToggleStarred}>
-          <FaStar />
-        </ToggleButton> */}
         {/* <ToggleButton checked={word.bookmarked} type="checkbox" value="bookmarked" variant="info" onChange={props.onToggleBookmarked}>
           <FaBook />
         </ToggleButton> */}

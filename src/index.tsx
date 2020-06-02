@@ -10,6 +10,7 @@ import App from "./App";
 
 import * as serviceWorker from "./serviceWorker";
 
+/* (背单词神器) */
 log.setDefaultLevel("debug");
 log.setLevel("debug");
 
