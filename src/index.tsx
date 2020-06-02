@@ -1,18 +1,10 @@
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./index.css";
-import "react-hot-loader";
-
-import log from "loglevel";
+import "./init";
 
 import React from "react";
 import ReactDOM from "react-dom";
-import App from "./App";
-
 import * as serviceWorker from "./serviceWorker";
 
-/* (背单词神器) */
-log.setDefaultLevel("debug");
-log.setLevel("debug");
+import App from "./App";
 
 ReactDOM.render(
   <React.StrictMode>
@@ -25,8 +17,3 @@ ReactDOM.render(
 // unregister() to register() below. Note this comes with some pitfalls.
 // Learn more about service workers: https://bit.ly/CRA-PWA
 serviceWorker.unregister();
-
-/**
-multiple stars
-deploy
- */

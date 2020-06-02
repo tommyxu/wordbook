@@ -6,7 +6,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { jsx } from "@emotion/core";
 import { hot } from "react-hot-loader/root";
 
-import log from "loglevel";
+/* (背单词神器) */
 
 import _ from "lodash";
 import clsx from "clsx";
