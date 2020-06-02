@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs/promises";
 import log from "loglevel";
 import path from "path";
+import process from "process";
 
 log.setDefaultLevel("debug");
 
@@ -12,14 +13,17 @@ const specPattern = "wordbook/";
 var app = express();
 app.use(express.json());
 
+// testing api
 app.get("/api/ping", (req, res) => {
   res.send("pong");
 });
 
+// get state
 app.get("/api/state", (req, res) => {
   res.sendFile(dataFile, { root: dataDir });
 });
 
+// save state
 app.post("/api/state", async (req, res) => {
   if (req.body) {
     const state = req.body;
@@ -36,6 +40,7 @@ app.post("/api/state", async (req, res) => {
   }
 });
 
+// forward to web app
 app.use(express.static("./build"));
 
-app.listen(8000);
+app.listen(process.env.PORT || 7000);
