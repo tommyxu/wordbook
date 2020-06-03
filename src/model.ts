@@ -28,6 +28,8 @@ export interface WordModel {
 export interface WordBookModel {
   spec: string;
 
+  name: string;
+
   dirty: boolean;
   setDirty: Action<WordBookModel, boolean>;
 
@@ -46,7 +48,6 @@ export interface WordBookModel {
 
   currentWord: Computed<WordBookModel, WordModel | null>;
 
-  // toggleCurrentWordStarred: Action<WordBookModel>;
   setCurrentWordStars: Action<WordBookModel, number>;
   toggleCurrentWordBookmarked: Action<WordBookModel>;
   deleteCurrentWord: Action<WordBookModel>;
@@ -63,7 +64,7 @@ export interface WordBookModel {
   loadDefault: Thunk<WordBookModel>;
 
   cloudUpload: Thunk<WordBookModel>;
-  cloudDownload: Thunk<WordBookModel>;
+  cloudDownload: Thunk<WordBookModel, string>;
 
   autoSetDirty: ThunkOn<WordBookModel>;
 
@@ -96,7 +97,20 @@ export interface WordEditorModel {
   clearValues: Action<WordEditorModel>;
 }
 
+export interface WordBookOverviewModel {
+  name: string;
+  wordCount: number;
+  version: number; // data
+}
+
+export interface WordBookListModel {
+  books: Array<WordBookOverviewModel>;
+  setBooks: Action<WordBookListModel, Array<WordBookOverviewModel>>;
+  loadBooks: Thunk<WordBookListModel>;
+}
+
 export interface AppModel {
+  wordbookList: WordBookListModel;
   wordbook: WordBookModel;
 }
 
@@ -156,6 +170,8 @@ const createWordBookModel = () => {
   const wordbookModel: WordBookModel = {
     spec: "wordbook/1",
 
+    name: "",
+
     dirty: false,
     setDirty: action((state, flag) => {
       state.dirty = flag;
@@ -164,7 +180,6 @@ const createWordBookModel = () => {
     version: 0,
     increaseVersion: action((state) => {
       state.version = new Date().getTime();
-      state.dirty = true;
     }),
 
     filterStarred: false,
@@ -260,6 +275,7 @@ const createWordBookModel = () => {
     }),
 
     load: action((state, doc) => {
+      // check spec to determine if we can support this doc
       if (doc.spec?.startsWith("wordbook/") && doc._words) {
         const input = doc._words!;
         // regularize the input document
@@ -278,6 +294,21 @@ const createWordBookModel = () => {
         });
         state._words = content;
         log.info("load words, size: ", content.length);
+
+        // reset each field if possible
+        state.spec = doc.spec;
+        if (
+          state.name === "" ||
+          state.name === undefined ||
+          state.name === null
+        ) {
+          state.name = doc.name || nanoid();
+        }
+        state.version = doc.version ?? state.version;
+        state.remarkVisible = doc.remarkVisible ?? state.remarkVisible;
+        state.dirty = false;
+
+        log.info("reset pointer");
         state.pointer = 0;
       } else {
         log.error("unknown document. cannot merge.");
@@ -285,27 +316,36 @@ const createWordBookModel = () => {
     }),
 
     loadDefault: thunk((actions, payload, helper) => {
-      if (helper.getState()._words.length === 0) {
-        actions.saveWord({ name: "fluster", remark: "fluster detail example" });
-        actions.saveWord({
-          name: "resolute",
-          remark: "resolute detail example",
-        });
-        actions.saveWord({
-          name: "cardigan",
-          remark: "cardigan detail example",
-        });
-      }
+      // if (helper.getState()._words.length === 0) {
+      //   actions.saveWord({ name: "fluster", remark: "fluster detail example" });
+      //   actions.saveWord({
+      //     name: "resolute",
+      //     remark: "resolute detail example",
+      //   });
+      //   actions.saveWord({
+      //     name: "cardigan",
+      //     remark: "cardigan detail example",
+      //   });
+      // }
     }),
 
-    cloudDownload: thunk(async (actions, payload, helper) => {
-      const resp = await fetch("api/state");
+    cloudDownload: thunk(async (actions, bookName, helper) => {
+      const resp = await fetch(
+        `${process.env.PUBLIC_URL}/api/books/${bookName}/raw`
+      );
       const remoteDoc = await resp.json();
+      remoteDoc.name = bookName;
       actions.load(remoteDoc);
     }),
 
     cloudUpload: thunk(async (actions, payload, helper) => {
-      const resp = await fetch("api/state", {
+      log.info("current name:", helper.getState().name);
+      const name = helper.getState().name;
+      if (!name) {
+        log.info("unknown wordbank name, skip uploading");
+        return;
+      }
+      const resp = await fetch(`${process.env.PUBLIC_URL}/api/books/${name}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,13 +360,14 @@ const createWordBookModel = () => {
 
     autoSetDirty: thunkOn(
       (actions) => [
-        // actions.offsetPointer,
         actions.setCurrentWordStars,
         actions.deleteCurrentWord,
         actions.saveWord,
       ],
       async (actions, target) => {
         actions.increaseVersion();
+        actions.setDirty(true);
+        await actions.cloudUpload();
       }
     ),
 
@@ -358,7 +399,9 @@ const createWordBookModel = () => {
         case "yes":
           actions.uiState.setConfirmDialogVisible(false);
           actions.cloudUpload();
+          break;
         case "no":
+        case "hide":
           actions.uiState.setConfirmDialogVisible(false);
           break;
       }
@@ -368,8 +411,32 @@ const createWordBookModel = () => {
   return wordbookModel;
 };
 
+interface ApiResponse {
+  status: "ok" | "error";
+  error: string;
+  data: object;
+}
+
+const createWordBookListModel = () => {
+  const model: WordBookListModel = {
+    books: [],
+    setBooks: action((state, payload) => {
+      state.books = payload;
+    }),
+    loadBooks: thunk(async (actions, payload, helper) => {
+      const resp = await fetch(`${process.env.PUBLIC_URL}/api/books`);
+      const doc = await resp.json();
+      actions.setBooks(
+        (doc as ApiResponse).data as Array<WordBookOverviewModel>
+      );
+    }),
+  };
+  return model;
+};
+
 const createAppModel = () => {
   const appModel: AppModel = {
+    wordbookList: createWordBookListModel(),
     wordbook: createWordBookModel(),
   };
   return appModel;
@@ -391,5 +458,6 @@ const typedHooks = createTypedHooks<AppModel>();
 export const useStoreActions = typedHooks.useStoreActions;
 export const useStoreDispatch = typedHooks.useStoreDispatch;
 export const useStoreState = typedHooks.useStoreState;
+export const useStore = typedHooks.useStore;
 
 export default createAppModel();
