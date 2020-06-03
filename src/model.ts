@@ -299,13 +299,13 @@ const createWordBookModel = () => {
     }),
 
     cloudDownload: thunk(async (actions, payload, helper) => {
-      const resp = await fetch("/api/state");
+      const resp = await fetch("api/state");
       const remoteDoc = await resp.json();
       actions.load(remoteDoc);
     }),
 
     cloudUpload: thunk(async (actions, payload, helper) => {
-      const resp = await fetch("/api/state", {
+      const resp = await fetch("api/state", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
