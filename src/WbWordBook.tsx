@@ -200,11 +200,15 @@ const WbWordBookNav = () => {
       className={clsx("mb-0", styles.WbWordBookNav__pagination)}
     >
       <Pagination.First onClick={() => offsetPointer(-1e5)} />
+      <Pagination.Ellipsis onClick={() => offsetPointer(-10)} />
       <Pagination.Prev onClick={() => offsetPointer(-1)} />
       <PageItem disabled>
-        {pointer + 1} / {wordSize}
+        <small>
+          {pointer + 1} / {wordSize}
+        </small>
       </PageItem>
       <Pagination.Next onClick={() => offsetPointer(1)} />
+      <Pagination.Ellipsis onClick={() => offsetPointer(10)} />
       <Pagination.Last onClick={() => offsetPointer(1e5)} />
     </Pagination>
   );
