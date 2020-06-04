@@ -9,6 +9,8 @@ import _ from "lodash";
 log.setDefaultLevel("info");
 
 const dataDir = "./data";
+const buildDir = "./build";
+
 const specPattern = "wordbook/";
 
 var app = express();
@@ -97,6 +99,10 @@ app.post("/api/books/:bookName", async (req, res) => {
 // testing api
 app.get("/api/ping", (req, res) => {
   res.send(makeResult("pong"));
+});
+
+app.get("/pages/*", function (req, res) {
+  res.sendFile("index.html", { root: buildDir });
 });
 
 // forward to web app
