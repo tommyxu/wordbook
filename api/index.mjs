@@ -1,5 +1,6 @@
 import express from "express";
 import fs from "fs/promises";
+import fsLegacy from "fs";
 import log from "loglevel";
 import path from "path";
 import process from "process";
@@ -25,7 +26,8 @@ const booksConfig = [
 ];
 
 const getDataFile = (file) => {
-  return path.join(dataDir, file);
+  const f = path.join(dataDir, file);
+  return f;
 };
 
 const makeResult = (payload, result = true) => {
