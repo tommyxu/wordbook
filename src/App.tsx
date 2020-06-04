@@ -33,9 +33,9 @@ function App() {
   return (
     <StoreProvider store={store}>
       <Router>
-        <Redirect path="/" from="/" to="books" />
-        <WbWordBooksPage path="books" />
-        <WbWordBookPage path="books/:bookName" />
+        <Redirect path="/" from="/" to="/books" />
+        <WbWordBooksPage path="/books" />
+        <WbWordBookPage path="/books/:bookName" />
       </Router>
       {/*
         <header className="App-header">
