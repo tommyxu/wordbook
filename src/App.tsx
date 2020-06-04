@@ -33,7 +33,7 @@ function App() {
   return (
     <StoreProvider store={store}>
       <Router>
-        <Redirect path="/" to="books" />
+        <Redirect path="/" from="/" to="books" />
         <WbWordBooksPage path="books" />
         <WbWordBookPage path="books/:bookName" />
       </Router>
