@@ -2,9 +2,15 @@ import styles from "./WbWordBook.module.css";
 
 import { hot } from "react-hot-loader/root";
 /** @jsx jsx */
-import { jsx } from "@emotion/core";
+import { jsx, css } from "@emotion/core";
 
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+  MouseEvent,
+} from "react";
 
 import clsx from "clsx";
 
@@ -40,6 +46,7 @@ import {
   FaCloudUploadAlt,
   FaCloudDownloadAlt,
 } from "react-icons/fa";
+import { MdFirstPage, MdLastPage } from "react-icons/md";
 
 import { useStoreActions, useStore, useStoreState } from "./model";
 
@@ -52,42 +59,88 @@ type WbWordCardProps = {
   remarkVisible?: boolean;
 
   onWordClick: () => void;
+  onWordSearch: () => void;
   onDelete: () => void;
   onStarsChange: (numStars: number) => void;
-  onToggleBookmarked: () => void;
+  onRemarkClicked: () => void;
 };
 
 const WbWordCard = (props: WbWordCardProps) => {
   const { word, remarkVisible } = props;
+
+  const deleteWord = useCallback(
+    (evt: MouseEvent) => {
+      evt.stopPropagation();
+      props.onDelete();
+    },
+    [props.onDelete]
+  );
+
+  const wordClickHandler = useCallback(
+    (evt: MouseEvent) => {
+      props.onWordClick();
+    },
+    [props.onWordClick]
+  );
+
+  const wordSearchHandler = useCallback(
+    (evt: MouseEvent) => {
+      props.onWordSearch();
+    },
+    [props.onWordSearch]
+  );
+
+  const immerseMode = useStoreState(
+    (state) => state.wordbook.uiState.immerseMode
+  );
+
   return (
     <Card>
       <Card.Body>
-        <Card.Title
-          css={{
-            cursor: "pointer",
-          }}
-        >
-          <Button
-            variant="light"
-            onClick={() => props.onDelete()}
-            className={styles.WbWordCard__deleteButton}
-          >
-            <FaTimes />
-          </Button>
-          <div className="d-flex align-items-center">
-            <span className="h1" onClick={() => props.onWordClick()}>
-              {word.name}
-            </span>
+        {immerseMode ? (
+          <div>
+            <p
+              className="display-3 mt-5 mb-5 typeface-open-sans"
+              css={{
+                textAlign: "center",
+              }}
+            >
+              <span>{word.name}</span>
+            </p>
           </div>
-        </Card.Title>
-
-        {/* <Card.Subtitle className="mb-2 text-muted">Card Subtitle</Card.Subtitle> */}
-        <Card.Text className={styles.WbWordCard_remark}>
-          {remarkVisible && (
-            <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
-          )}
-        </Card.Text>
-
+        ) : (
+          <React.Fragment>
+            <Card.Title
+              css={{
+                cursor: "pointer",
+              }}
+              onClick={wordClickHandler}
+              onDoubleClick={wordSearchHandler}
+            >
+              <Button
+                variant="light"
+                onClick={deleteWord}
+                className={styles.WbWordCard__deleteButton}
+              >
+                <FaTimes />
+              </Button>
+              <div className="d-flex align-items-center">
+                <span className="h1">{word.name}</span>
+              </div>
+            </Card.Title>
+            <Card.Text
+              className={styles.WbWordCard_remark}
+              onClick={() => props.onRemarkClicked()}
+              css={{
+                cursor: "pointer",
+              }}
+            >
+              {remarkVisible && (
+                <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
+              )}
+            </Card.Text>
+          </React.Fragment>
+        )}
         {/* <Card.Link href="#">Card Link</Card.Link>
         <Card.Link href="#">Another Link</Card.Link> */}
         {/* <ToggleButton checked={word.bookmarked} type="checkbox" value="bookmarked" variant="info" onChange={props.onToggleBookmarked}>
@@ -199,17 +252,41 @@ const WbWordBookNav = () => {
       size="lg"
       className={clsx("mb-0", styles.WbWordBookNav__pagination)}
     >
-      <Pagination.First onClick={() => offsetPointer(-1e5)} />
-      <Pagination.Ellipsis onClick={() => offsetPointer(-10)} />
-      <Pagination.Prev onClick={() => offsetPointer(-1)} />
-      <PageItem disabled>
-        <small>
-          {pointer + 1} / {wordSize}
-        </small>
+      <Pagination.Item onClick={() => offsetPointer(-1e5)}>
+        <MdFirstPage />
+      </Pagination.Item>
+      <Pagination.First onClick={() => offsetPointer(-10)} />
+      <Pagination.Prev
+        onClick={() => offsetPointer(-1)}
+        css={{
+          textAlign: "center",
+          width: "4.5rem",
+        }}
+      />
+      <PageItem
+        disabled
+        css={{
+          textAlign: "center",
+          width: "9rem",
+        }}
+      >
+        <span>
+          <small>
+            {pointer + 1} / {wordSize}
+          </small>
+        </span>
       </PageItem>
-      <Pagination.Next onClick={() => offsetPointer(1)} />
-      <Pagination.Ellipsis onClick={() => offsetPointer(10)} />
-      <Pagination.Last onClick={() => offsetPointer(1e5)} />
+      <Pagination.Next
+        onClick={() => offsetPointer(1)}
+        css={{
+          textAlign: "center",
+          width: "4.5rem",
+        }}
+      />
+      <Pagination.Last onClick={() => offsetPointer(10)} />
+      <Pagination.Item onClick={() => offsetPointer(1e5)}>
+        <MdLastPage />
+      </Pagination.Item>
     </Pagination>
   );
 };
@@ -220,8 +297,8 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
 
-  const toggleWordBookmarked = useStoreActions(
-    (actions) => actions.wordbook.toggleCurrentWordBookmarked
+  const toggleRemarkVisible = useStoreActions(
+    (actions) => actions.wordbook.toggleRemarkVisible
   );
   const setCurrentWordStars = useStoreActions(
     (state) => state.wordbook.setCurrentWordStars
@@ -235,14 +312,21 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const setEditorCollapsed = useStoreActions(
     (actions) => actions.wordbook.uiState.setEditorCollapsed
   );
+  const requestWordSearch = useStoreActions(
+    (actions) => actions.wordbook.uiState.requestDirectSearch
+  );
 
-  const toggleBookmarkedCallback = useCallback(() => toggleWordBookmarked(), [
-    toggleWordBookmarked,
-  ]);
   const workClickedCallback = useCallback(() => {
     fillEditorWithCurrentWord();
     setEditorCollapsed(true);
   }, [fillEditorWithCurrentWord, setEditorCollapsed]);
+
+  const wordSearchCallback = useCallback(() => {
+    fillEditorWithCurrentWord();
+    setEditorCollapsed(true);
+    requestWordSearch();
+  }, [fillEditorWithCurrentWord, setEditorCollapsed, requestWordSearch]);
+
   const deleteCallback = useCallback(() => deleteCurrentWord(), [
     deleteCurrentWord,
   ]);
@@ -260,18 +344,19 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
           <WbWordCard
             word={word}
             remarkVisible={remarkVisible}
-            onToggleBookmarked={toggleBookmarkedCallback}
+            onRemarkClicked={() => toggleRemarkVisible()}
             onWordClick={workClickedCallback}
+            onWordSearch={wordSearchCallback}
             onDelete={deleteCallback}
             onStarsChange={changeStars}
           />
         )}
       </div>
-      <div className="d-flex align-items-center align-self-center">
+
+      <div className="mt-3 d-flex align-items-center align-self-center">
         <div className="flex-fill">
           <WbWordBookNav />
         </div>
-        <WbWordBookViewControl />
       </div>
     </div>
   );
@@ -318,6 +403,19 @@ const WbWordEditor = (props: WbWordEditorProps) => {
     },
     [setValues]
   );
+
+  const directSearch = useStoreState(
+    (state) => state.wordbook.uiState.directSearch
+  );
+  const clearDirectSearch = useStoreActions(
+    (actions) => actions.wordbook.uiState.clearDirectSearch
+  );
+  useEffect(() => {
+    if (directSearch) {
+      clearDirectSearch();
+      props.onSearch(fields.name);
+    }
+  }, [directSearch, clearDirectSearch, fields, props.onSearch]);
 
   return (
     <div>
@@ -492,7 +590,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
 
   return (
     <div className={className}>
-      <ButtonGroup size="lg" css={{ visibility: "hidden" }}>
+      <ButtonGroup size="lg" css={{ display: "none" }}>
         <Button variant="outline-dark" onClick={() => cloudDownload("")}>
           <FaCloudDownloadAlt />
         </Button>
@@ -610,6 +708,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
   const searchFrameVisible = useStoreState(
     (state) => state.wordbook.uiState.searchFrameVisible
   );
+
   const searchWordCallback = useCallback(
     (name) => {
       const url = `https://dictionary.cambridge.org/dictionary/english/${name}`;
@@ -681,9 +780,10 @@ export const WbWordBook = (props: WbWordBookProps) => {
       </Row>
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
-          <WbWordBookOps
-            className={clsx("d-flex justify-content-between mt-3")}
-          />
+          <div className="d-flex justify-content-between mt-3">
+            <WbWordBookOps />
+            <WbWordBookViewControl />
+          </div>
           <WbWordBookViewer />
           <div className="mt-4">
             <Accordion activeKey={"" + editorCollapsed}>

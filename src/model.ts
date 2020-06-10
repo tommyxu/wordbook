@@ -89,6 +89,13 @@ export interface WordBookUiState {
 
   editorCollapsed: boolean;
   setEditorCollapsed: Action<WordBookUiState, boolean>;
+
+  directSearch: boolean;
+  requestDirectSearch: Action<WordBookUiState>;
+  clearDirectSearch: Action<WordBookUiState>;
+
+  immerseMode: boolean;
+  toggleImmerseMode: Action<WordBookUiState>;
 }
 
 export interface WordEditorModel {
@@ -387,7 +394,17 @@ const createWordBookModel = () => {
       editorCollapsed: false,
       setEditorCollapsed: action((state, collapsed) => {
         state.editorCollapsed = collapsed;
-        log.info("set note visible", collapsed);
+      }),
+      directSearch: false,
+      requestDirectSearch: action((state) => {
+        state.directSearch = true;
+      }),
+      clearDirectSearch: action((state) => {
+        state.directSearch = false;
+      }),
+      immerseMode: false,
+      toggleImmerseMode: action((state) => {
+        state.immerseMode = !state.immerseMode;
       }),
     },
 
