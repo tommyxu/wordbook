@@ -43,7 +43,7 @@ const WbWordBooks = (props: WbWordBooksProps) => {
                   <FaBook />
                   <strong>
                     {" "}
-                    <span className="typeface-open-sans">{book.name}</span>
+                    <span>{book.name}</span>
                   </strong>
                 </h2>
               </Card.Title>
