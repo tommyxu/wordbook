@@ -1,6 +1,6 @@
 import "react-hot-loader";
 
-import "typeface-open-sans";
+import "typeface-roboto-slab";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
 

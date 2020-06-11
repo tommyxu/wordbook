@@ -25,3 +25,11 @@ code {
 .typeface-open-sans {
   font-family: "Open Sans";
 }
+
+.typeface-roboto-slab {
+  font-family: "Roboto Slab";
+}
+
+.text-serif {
+  font-family: serif;
+}

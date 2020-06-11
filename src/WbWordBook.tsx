@@ -45,6 +45,7 @@ import {
   FaTimes,
   FaCloudUploadAlt,
   FaCloudDownloadAlt,
+  FaVrCardboard,
 } from "react-icons/fa";
 import { MdFirstPage, MdLastPage } from "react-icons/md";
 
@@ -56,7 +57,8 @@ import type { WordBookModel, WordModel } from "./model";
 // *** Component
 type WbWordCardProps = {
   word: WordModel;
-  remarkVisible?: boolean;
+  remarkVisible: boolean;
+  immerseMode: boolean;
 
   onWordClick: () => void;
   onWordSearch: () => void;
@@ -66,7 +68,7 @@ type WbWordCardProps = {
 };
 
 const WbWordCard = (props: WbWordCardProps) => {
-  const { word, remarkVisible } = props;
+  const { word, remarkVisible, immerseMode } = props;
 
   const deleteWord = useCallback(
     (evt: MouseEvent) => {
@@ -90,22 +92,24 @@ const WbWordCard = (props: WbWordCardProps) => {
     [props.onWordSearch]
   );
 
-  const immerseMode = useStoreState(
-    (state) => state.wordbook.uiState.immerseMode
-  );
-
   return (
-    <Card>
+    <Card
+      css={
+        {
+          // minHeight: 300,
+        }
+      }
+    >
       <Card.Body>
         {immerseMode ? (
-          <div>
+          <div className="pt-3">
             <p
-              className="display-3 mt-5 mb-5 typeface-open-sans"
+              className="display-3 mt-5 mb-5"
               css={{
                 textAlign: "center",
               }}
             >
-              <span>{word.name}</span>
+              <span className="font-weight-bolder">{word.name}</span>
             </p>
           </div>
         ) : (
@@ -296,6 +300,9 @@ type WbWordBookViewerProps = {};
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
+  const immerseMode = useStoreState(
+    (state) => state.wordbook.uiState.immerseMode
+  );
 
   const toggleRemarkVisible = useStoreActions(
     (actions) => actions.wordbook.toggleRemarkVisible
@@ -327,10 +334,15 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
     requestWordSearch();
   }, [fillEditorWithCurrentWord, setEditorCollapsed, requestWordSearch]);
 
+  const toggleRemarkVisibleCallback = useCallback(() => {
+    toggleRemarkVisible();
+  }, [toggleRemarkVisible]);
+
   const deleteCallback = useCallback(() => deleteCurrentWord(), [
     deleteCurrentWord,
   ]);
-  const changeStars = useCallback(
+
+  const changeStarsCallback = useCallback(
     (value) => {
       setCurrentWordStars(value);
     },
@@ -344,11 +356,12 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
           <WbWordCard
             word={word}
             remarkVisible={remarkVisible}
-            onRemarkClicked={() => toggleRemarkVisible()}
+            immerseMode={immerseMode}
+            onRemarkClicked={toggleRemarkVisibleCallback}
             onWordClick={workClickedCallback}
             onWordSearch={wordSearchCallback}
             onDelete={deleteCallback}
-            onStarsChange={changeStars}
+            onStarsChange={changeStarsCallback}
           />
         )}
       </div>
@@ -492,24 +505,39 @@ const WbWordBookViewControl = () => {
     (actions) => actions.wordbook.toggleFilterStarred
   );
 
+  const immerseMode = useStoreState(
+    (state) => state.wordbook.uiState.immerseMode
+  );
+  const toggleImmerseMode = useStoreActions(
+    (actions) => actions.wordbook.uiState.toggleImmerseMode
+  );
+  const toggleImmerseModeCallback = useCallback(() => {
+    toggleImmerseMode();
+  }, [toggleImmerseMode]);
+
   const optionChecked = [];
-  if (remarkVisible) {
-    optionChecked.push("remarkVisible");
-  }
-  if (filterStarred) {
-    optionChecked.push("filterStarred");
-  }
+  remarkVisible && optionChecked.push("remarkVisible");
+  filterStarred && optionChecked.push("filterStarred");
+  immerseMode && optionChecked.push("immerseMode");
+
   return (
     <ToggleButtonGroup type="checkbox" size="lg" value={optionChecked}>
       <ToggleButton
-        variant="outline-success"
+        variant="outline-primary"
         value="remarkVisible"
         onChange={() => toggleRemarkVisible()}
       >
         <FaEye />
       </ToggleButton>
       <ToggleButton
-        variant="outline-success"
+        variant="outline-primary"
+        value="immerseMode"
+        onChange={toggleImmerseModeCallback}
+      >
+        <FaVrCardboard />
+      </ToggleButton>
+      <ToggleButton
+        variant="outline-primary"
         value="filterStarred"
         onChange={() => toggleFilterStarred()}
       >
