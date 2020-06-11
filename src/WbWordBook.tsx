@@ -268,7 +268,7 @@ const WbWordBookNav = () => {
         }}
       />
       <PageItem
-        disabled
+        active
         css={{
           textAlign: "center",
           width: "9rem",
@@ -366,7 +366,7 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
         )}
       </div>
 
-      <div className="mt-3 d-flex align-items-center align-self-center">
+      <div className="mt-4 d-flex align-items-center align-self-center">
         <div className="flex-fill">
           <WbWordBookNav />
         </div>
@@ -630,14 +630,14 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
         </Button>
       </ButtonGroup>
       <ButtonGroup size="lg">
-        <Button variant="outline-dark" onClick={downloadFile}>
+        <Button variant="outline-primary" onClick={downloadFile}>
           <FaDownload />
         </Button>
-        <Button variant="outline-dark" onClick={chooseFile}>
+        <Button variant="outline-primary" onClick={chooseFile}>
           <FaUpload />
         </Button>
         <Button
-          variant="outline-dark"
+          variant="outline-primary"
           onClick={() => toggleSearchFrameVisible()}
         >
           <FaArrowsAltH />
