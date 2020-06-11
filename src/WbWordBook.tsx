@@ -109,7 +109,9 @@ const WbWordCard = (props: WbWordCardProps) => {
                 textAlign: "center",
               }}
             >
-              <span className="font-weight-bolder">{word.name}</span>
+              <span className="font-weight-bolder typeface-roboto-slab">
+                {word.name}
+              </span>
             </p>
           </div>
         ) : (

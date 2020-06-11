@@ -43,7 +43,7 @@ const WbWordBooks = (props: WbWordBooksProps) => {
                   <FaBook />
                   <strong>
                     {" "}
-                    <span>{book.name}</span>
+                    <span className="typeface-roboto-slab">{book.name}</span>
                   </strong>
                 </h2>
               </Card.Title>
@@ -52,7 +52,7 @@ const WbWordBooks = (props: WbWordBooksProps) => {
               </Card.Text>
               <div className="d-flex justify-content-end">
                 <Link to={book.name}>
-                  <Button className="pl-4 pr-4" variant="primary">
+                  <Button className="pl-4 pr-4" variant="success">
                     Open
                   </Button>
                 </Link>
