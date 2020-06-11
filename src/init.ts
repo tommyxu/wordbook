@@ -9,5 +9,5 @@ import "./bootstrap.min.css";
 import "./index.css";
 
 import log from "loglevel";
-log.setDefaultLevel("debug");
+// log.setDefaultLevel("debug");
 log.setLevel("debug");

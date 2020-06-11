@@ -28,6 +28,8 @@ const store = (function initAppStore() {
   return store;
 })();
 
+log.info("store created");
+
 // *** App Root-Component
 function App() {
   return (

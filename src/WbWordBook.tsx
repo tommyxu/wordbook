@@ -32,6 +32,9 @@ import PageItem from "react-bootstrap/PageItem";
 import Accordion from "react-bootstrap/Accordion";
 import Toast from "react-bootstrap/Toast";
 import Modal from "react-bootstrap/Modal";
+
+import { SwitchTransition, CSSTransition } from "react-transition-group";
+
 import {
   FaStar,
   FaAngleDoubleDown,
@@ -56,7 +59,7 @@ import type { WordBookModel, WordModel } from "./model";
 
 // *** Component
 type WbWordCardProps = {
-  word: WordModel;
+  word: WordModel | undefined | null;
   remarkVisible: boolean;
   immerseMode: boolean;
 
@@ -68,7 +71,13 @@ type WbWordCardProps = {
 };
 
 const WbWordCard = (props: WbWordCardProps) => {
-  const { word, remarkVisible, immerseMode } = props;
+  const { word: input, remarkVisible, immerseMode } = props;
+
+  let word = input || {
+    name: "...",
+    remark: "...",
+    stars: 0,
+  };
 
   const deleteWord = useCallback(
     (evt: MouseEvent) => {
@@ -93,70 +102,78 @@ const WbWordCard = (props: WbWordCardProps) => {
   );
 
   return (
-    <Card
-      css={
-        {
-          // minHeight: 300,
-        }
-      }
-    >
-      <Card.Body>
-        {immerseMode ? (
-          <div className="pt-3">
-            <p
-              className="display-3 mt-5 mb-5"
-              css={{
-                textAlign: "center",
-              }}
-            >
-              <span className="font-weight-bolder typeface-roboto-slab">
-                {word.name}
-              </span>
-            </p>
-          </div>
-        ) : (
-          <React.Fragment>
-            <Card.Title
-              css={{
-                cursor: "pointer",
-              }}
-              onClick={wordClickHandler}
-              onDoubleClick={wordSearchHandler}
-            >
-              <Button
-                variant="light"
-                onClick={deleteWord}
-                className={styles.WbWordCard__deleteButton}
-              >
-                <FaTimes />
-              </Button>
-              <div className="d-flex align-items-center">
-                <span className="h1">{word.name}</span>
+    <SwitchTransition>
+      <CSSTransition
+        key={word.name}
+        in
+        mountOnEnter
+        unmountOnExit
+        timeout={200}
+        classNames="fade"
+      >
+        <Card>
+          <Card.Body>
+            {immerseMode ? (
+              <div className="pt-3">
+                <p
+                  className="display-3 mt-5 mb-5"
+                  css={{
+                    textAlign: "center",
+                  }}
+                >
+                  <span className="font-weight-bolder typeface-roboto-slab">
+                    {word.name}
+                  </span>
+                </p>
               </div>
-            </Card.Title>
-            <Card.Text
-              className={styles.WbWordCard_remark}
-              onClick={() => props.onRemarkClicked()}
-              css={{
-                cursor: "pointer",
-              }}
-            >
-              {remarkVisible && (
-                <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
-              )}
-            </Card.Text>
-          </React.Fragment>
-        )}
-        {/* <Card.Link href="#">Card Link</Card.Link>
+            ) : (
+              <React.Fragment>
+                <Card.Title
+                  css={{
+                    cursor: "pointer",
+                  }}
+                  onClick={wordClickHandler}
+                  onDoubleClick={wordSearchHandler}
+                >
+                  <Button
+                    variant="light"
+                    onClick={deleteWord}
+                    className={styles.WbWordCard__deleteButton}
+                  >
+                    <FaTimes />
+                  </Button>
+                  <div className="d-flex align-items-center">
+                    <span className="h1">{word.name}</span>
+                  </div>
+                </Card.Title>
+                <Card.Text
+                  className={styles.WbWordCard_remark}
+                  onClick={() => props.onRemarkClicked()}
+                  css={{
+                    cursor: "pointer",
+                  }}
+                >
+                  {remarkVisible && (
+                    <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
+                  )}
+                </Card.Text>
+              </React.Fragment>
+            )}
+            {/* <Card.Link href="#">Card Link</Card.Link>
         <Card.Link href="#">Another Link</Card.Link> */}
-        {/* <ToggleButton checked={word.bookmarked} type="checkbox" value="bookmarked" variant="info" onChange={props.onToggleBookmarked}>
+            {/* <ToggleButton checked={word.bookmarked} type="checkbox" value="bookmarked" variant="info" onChange={props.onToggleBookmarked}>
           <FaBook />
         </ToggleButton> */}
-        <div className={clsx("d-flex", "flex-row-reverse")}>
-          <WbStarRater stars={word.stars} onStarsChange={props.onStarsChange} />
-        </div>
-      </Card.Body>
-    </Card>
+            <div className={clsx("d-flex", "flex-row-reverse")}>
+              <WbStarRater
+                stars={word.stars}
+                onStarsChange={props.onStarsChange}
+              />
+            </div>
+          </Card.Body>
+        </Card>
+      </CSSTransition>
+    </SwitchTransition>
   );
 };
 
@@ -248,6 +265,7 @@ const WbStarToggler = (props: WbStarTogglerProps) => {
 };
 
 const WbWordBookNav = () => {
+  log.info("render booknav");
   const pointer = useStoreState((state) => state.wordbook.pointer);
   const wordSize = useStoreState((state) => state.wordbook.currentWordSize);
   const offsetPointer = useStoreActions(
@@ -300,6 +318,8 @@ const WbWordBookNav = () => {
 type WbWordBookViewerProps = {};
 
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
+  log.info("render viewer", props);
+
   const word = useStoreState((state) => state.wordbook.currentWord);
   const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
   const immerseMode = useStoreState(
@@ -354,20 +374,17 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   return (
     <div>
       <div className={styles.WbWordBookViewer__WordCard}>
-        {word && (
-          <WbWordCard
-            word={word}
-            remarkVisible={remarkVisible}
-            immerseMode={immerseMode}
-            onRemarkClicked={toggleRemarkVisibleCallback}
-            onWordClick={workClickedCallback}
-            onWordSearch={wordSearchCallback}
-            onDelete={deleteCallback}
-            onStarsChange={changeStarsCallback}
-          />
-        )}
+        <WbWordCard
+          word={word}
+          remarkVisible={remarkVisible}
+          immerseMode={immerseMode}
+          onRemarkClicked={toggleRemarkVisibleCallback}
+          onWordClick={workClickedCallback}
+          onWordSearch={wordSearchCallback}
+          onDelete={deleteCallback}
+          onStarsChange={changeStarsCallback}
+        />
       </div>
-
       <div className="mt-4 d-flex align-items-center align-self-center">
         <div className="flex-fill">
           <WbWordBookNav />
@@ -425,6 +442,7 @@ const WbWordEditor = (props: WbWordEditorProps) => {
   const clearDirectSearch = useStoreActions(
     (actions) => actions.wordbook.uiState.clearDirectSearch
   );
+
   useEffect(() => {
     if (directSearch) {
       clearDirectSearch();
@@ -713,6 +731,8 @@ const ConfirmDialog = (props: ConfirmDialogProps) => {
 type WbWordBookProps = {};
 
 export const WbWordBook = (props: WbWordBookProps) => {
+  log.info("render wbwordbook");
+
   const frameRef = useRef(null);
 
   const editorCollapsed = useStoreState(
@@ -780,7 +800,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
           />
         </Col>
       </Row>
-      <Row>
+      {/* <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
           <div className="position-relative">
             <div
@@ -807,7 +827,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
             </div>
           </div>
         </Col>
-      </Row>
+      </Row> */}
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
           <div className="d-flex justify-content-between mt-3">

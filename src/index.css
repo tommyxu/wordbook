@@ -21,7 +21,6 @@ body {
 .l0 {
   left: 0;
 }
-
 .r0 {
   right: 0;
 }
@@ -29,11 +28,36 @@ body {
 .typeface-open-sans {
   font-family: "Open Sans";
 }
-
 .typeface-roboto-slab {
   font-family: "Roboto Slab";
 }
 
-.text-serif {
-  font-family: serif;
+.fade-enter {
+  opacity: 0.2;
 }
+.fade-exit {
+  opacity: 1;
+}
+.fade-enter-active {
+  opacity: 1;
+}
+.fade-exit-active {
+  opacity: 0;
+}
+.fade-enter-active,
+.fade-exit-active {
+  transition: opacity 200ms ease-in-out;
+}
+
+/* 
+.fade-appear {
+  opacity: 0;
+}
+.fade-appear-active {
+  transition: opacity 1000ms;
+  opacity: 1;
+}
+.fade-appear-done {
+  opacity: 1;
+} 
+*/
