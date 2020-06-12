@@ -49,6 +49,7 @@ import {
   FaCloudUploadAlt,
   FaCloudDownloadAlt,
   FaVrCardboard,
+  FaCloud,
 } from "react-icons/fa";
 import { MdFirstPage, MdLastPage } from "react-icons/md";
 
@@ -74,8 +75,8 @@ const WbWordCard = (props: WbWordCardProps) => {
   const { word: input, remarkVisible, immerseMode } = props;
 
   let word = input || {
-    name: "...",
-    remark: "...",
+    name: "Loading ...",
+    remark: "",
     stars: 0,
   };
 
@@ -443,6 +444,13 @@ const WbWordEditor = (props: WbWordEditorProps) => {
     (actions) => actions.wordbook.uiState.clearDirectSearch
   );
 
+  const locatePointer = useStoreActions(
+    (actions) => actions.wordbook.locatePointer
+  );
+  const locatePointerCallback = useCallback(() => {
+    locatePointer(_.trim(fields.name));
+  }, [locatePointer, fields]);
+
   useEffect(() => {
     if (directSearch) {
       clearDirectSearch();
@@ -474,14 +482,18 @@ const WbWordEditor = (props: WbWordEditorProps) => {
               Please choose a username.
             </Form.Control.Feedback>
             <InputGroup.Append>
-              {/* <InputGroup.Text id="inputGroupPrepend"> */}
               <Button variant="outline-secondary" onClick={clearInput}>
                 <FaTimes />
               </Button>
-              <Button variant="outline-secondary" onClick={searchCallback}>
+              <Button
+                variant="outline-secondary"
+                onClick={locatePointerCallback}
+              >
                 <FaSearch />
               </Button>
-              {/* </InputGroup.Text> */}
+              <Button variant="outline-secondary" onClick={searchCallback}>
+                <FaCloud />
+              </Button>
             </InputGroup.Append>
           </InputGroup>
         </Form.Group>
@@ -728,6 +740,39 @@ const ConfirmDialog = (props: ConfirmDialogProps) => {
   );
 };
 
+const WbNotificationBoard = () => {
+  const notificationVisible = useStoreState(
+    (state) => state.wordbook.uiState.notificationVisible
+  );
+  const setNotificationVisible = useStoreActions(
+    (actions) => actions.wordbook.uiState.setNotificationVisible
+  );
+  const notificationText = useStoreState(
+    (state) => state.wordbook.uiState.notificationText
+  );
+
+  return (
+    <Toast
+      onClose={() => setNotificationVisible(false)}
+      show={notificationVisible}
+      delay={2500}
+      autohide
+      css={{
+        minWidth: "24rem",
+        position: "absolute",
+        bottom: "1rem",
+        left: "calc(50% - 12rem)",
+      }}
+    >
+      <Toast.Header>
+        <strong className="mr-auto">Warning</strong>
+        <small>just now</small>
+      </Toast.Header>
+      <Toast.Body>{notificationText}</Toast.Body>
+    </Toast>
+  );
+};
+
 type WbWordBookProps = {};
 
 export const WbWordBook = (props: WbWordBookProps) => {
@@ -746,13 +791,6 @@ export const WbWordBook = (props: WbWordBookProps) => {
       setEditorCollapsed(!editorCollapsed);
     },
     [setEditorCollapsed, editorCollapsed]
-  );
-
-  const notificationVisible = useStoreState(
-    (state) => state.wordbook.uiState.notificationVisible
-  );
-  const setNotificationVisible = useStoreActions(
-    (actions) => actions.wordbook.uiState.setNotificationVisible
   );
 
   const searchFrameVisible = useStoreState(
@@ -800,36 +838,9 @@ export const WbWordBook = (props: WbWordBookProps) => {
           />
         </Col>
       </Row>
-      {/* <Row>
-        <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
-          <div className="position-relative">
-            <div
-              className="d-flex justify-content-center position-absolute l0 r0"
-              css={{
-                zIndex: 100,
-              }}
-            >
-              <Toast
-                onClose={() => setNotificationVisible(false)}
-                show={notificationVisible}
-                // delay={3000}
-                // autohide
-                css={{
-                  minWidth: "30rem",
-                }}
-              >
-                <Toast.Header>
-                  <strong className="mr-auto">Synced</strong>
-                  <small>just now</small>
-                </Toast.Header>
-                <Toast.Body>Total {1} words</Toast.Body>
-              </Toast>
-            </div>
-          </div>
-        </Col>
-      </Row> */}
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
+          <WbNotificationBoard />
           <div className="d-flex justify-content-between mt-3">
             <WbWordBookOps />
             <WbWordBookViewControl />

@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import _ from "lodash";
+import _, { words } from "lodash";
 import log from "loglevel";
 
 import {
@@ -45,6 +45,8 @@ export interface WordBookModel {
 
   pointer: number;
   offsetPointer: Action<WordBookModel, number>;
+  setPointer: Action<WordBookModel, number>;
+  locatePointer: Thunk<WordBookModel, string>;
 
   currentWord: Computed<WordBookModel, WordModel | null>;
 
@@ -85,6 +87,8 @@ export interface WordBookUiState {
   toggleSearchFrameVisible: Action<WordBookUiState>;
 
   notificationVisible: boolean;
+  notificationText: string;
+  showNotification: Action<WordBookUiState, string>;
   setNotificationVisible: Action<WordBookUiState, boolean>;
 
   editorCollapsed: boolean;
@@ -152,6 +156,7 @@ const createWordBookModel = () => {
   const findWordIndex = (state: State<WordBookModel>, word: WordModel) => {
     return _.findIndex(state._words, (item) => item.id === word.id);
   };
+
   const getFilteredWords = (state: State<WordBookModel>) => {
     if (state.filterStarred) {
       return _.filter(state._words, (w) => w.starred);
@@ -159,6 +164,7 @@ const createWordBookModel = () => {
       return state._words;
     }
   };
+
   const setNewPointer = (state: State<WordBookModel>, p?: number) => {
     const filterWordSize = getFilteredWords(state).length;
     state.pointer = Math.max(
@@ -166,12 +172,22 @@ const createWordBookModel = () => {
       0
     );
   };
+
   const getCurrentWord = (state: State<WordBookModel>) => {
     if (state.pointer >= 0) {
       return getFilteredWords(state)[state.pointer];
     } else {
       return null;
     }
+  };
+
+  const showNotification = (
+    wordbookState: State<WordBookModel>,
+    text: string
+  ) => {
+    const state = wordbookState.uiState;
+    state.notificationText = text;
+    state.notificationVisible = true;
   };
 
   const wordbookModel: WordBookModel = {
@@ -210,6 +226,21 @@ const createWordBookModel = () => {
     offsetPointer: action((state, value) => {
       setNewPointer(state, state.pointer + value);
     }),
+    setPointer: action((state, pos) => {
+      state.filterStarred = false;
+      setNewPointer(state, pos);
+    }),
+    locatePointer: thunk((actions, wordName, helper) => {
+      const pos = _.findIndex(
+        helper.getState()._words,
+        (word) => word.name === wordName
+      );
+      if (pos === -1) {
+        actions.uiState.showNotification(`Word "${wordName}" not found`);
+      } else {
+        actions.setPointer(pos);
+      }
+    }),
 
     deleteCurrentWord: action((state) => {
       const cw = getCurrentWord(state);
@@ -217,14 +248,6 @@ const createWordBookModel = () => {
       state._words.splice(wIndex, 1);
       setNewPointer(state, state.pointer);
     }),
-    // toggleCurrentWordStarred: action((state) => {
-    //   const word = getCurrentWord(state);
-    //   if (word) {
-    //     word.starred = !word.starred;
-    //     // this operation might cause star array reseting and pointer reset
-    //     setNewPointer(state, state.pointer);
-    //   }
-    // }),
     setCurrentWordStars: action((state, stars: number) => {
       const word = getCurrentWord(state);
       if (word) {
@@ -387,9 +410,14 @@ const createWordBookModel = () => {
       toggleSearchFrameVisible: action((state) => {
         state.searchFrameVisible = !state.searchFrameVisible;
       }),
-      notificationVisible: false,
+      notificationVisible: true,
+      notificationText: "",
       setNotificationVisible: action((state, visible) => {
         state.notificationVisible = visible;
+      }),
+      showNotification: action((state, text) => {
+        state.notificationText = text;
+        state.notificationVisible = true;
       }),
       editorCollapsed: false,
       setEditorCollapsed: action((state, collapsed) => {
