@@ -279,6 +279,11 @@ const createWordBookModel = () => {
       if (pExist >= 0) {
         if (newWord.remark) {
           state._words[pExist].remark = newWord.remark;
+          if (state._words[pExist].remark === newWord.remark) {
+            // keep the old
+          } else {
+            // state._words[pExist].remark += "\n" + newWord.remark;
+          }
           state._words[pExist].lastModified = new Date().getTime();
         }
       } else {

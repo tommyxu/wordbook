@@ -4,6 +4,8 @@ import { hot } from "react-hot-loader/root";
 /** @jsx jsx */
 import { jsx, css } from "@emotion/core";
 
+import { Link } from "@reach/router";
+
 import React, {
   useCallback,
   useRef,
@@ -49,7 +51,7 @@ import {
   FaCloudUploadAlt,
   FaCloudDownloadAlt,
   FaVrCardboard,
-  FaCloud,
+  FaArrowLeft,
 } from "react-icons/fa";
 import { MdFirstPage, MdLastPage, MdLocationOn } from "react-icons/md";
 
@@ -112,17 +114,17 @@ const WbWordCard = (props: WbWordCardProps) => {
         timeout={200}
         classNames="fade"
       >
-        <Card>
+        <Card className="shadow-sm">
           <Card.Body>
             {immerseMode ? (
-              <div className="pt-3">
+              <div className="pt-2">
                 <p
                   className="display-3 mt-5 mb-5"
                   css={{
                     textAlign: "center",
                   }}
                 >
-                  <span className="font-weight-bolder typeface-roboto-slab">
+                  <span className="font-weight-bolder typeface-roboto">
                     {word.name}
                   </span>
                 </p>
@@ -285,7 +287,7 @@ const WbWordBookNav = () => {
         onClick={() => offsetPointer(-1)}
         css={{
           textAlign: "center",
-          width: "4.5rem",
+          width: "5rem",
         }}
       />
       <PageItem
@@ -305,7 +307,7 @@ const WbWordBookNav = () => {
         onClick={() => offsetPointer(1)}
         css={{
           textAlign: "center",
-          width: "4.5rem",
+          width: "5rem",
         }}
       />
       <Pagination.Last onClick={() => offsetPointer(10)} />
@@ -662,6 +664,11 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
         </Button>
       </ButtonGroup>
       <ButtonGroup size="lg">
+        {/* <Button variant="outline-primary"> */}
+        <Link to="/pages/books" className="btn btn-outline-primary">
+          <FaArrowLeft />
+        </Link>
+        {/* </Button> */}
         <Button variant="outline-primary" onClick={downloadFile}>
           <FaDownload />
         </Button>
@@ -890,9 +897,9 @@ export const WbWordBookPage = (props: WbWordBookPageProps) => {
   const cloudDownload = useStoreActions(
     (actions) => actions.wordbook.cloudDownload
   );
+
   // for page loading
   useEffect(() => {
-    log.info("load wordbook page", bookName);
     if (bookName !== undefined) {
       cloudDownload(bookName);
     }

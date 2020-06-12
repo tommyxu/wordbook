@@ -57,6 +57,8 @@
 .WbWordCard__deleteButton {
   position: absolute;
   right: 1rem;
+  background-color: transparent;
+  border: 0;
 }
 
 .WbWordBookViewer__WordCard {
