@@ -410,7 +410,7 @@ const createWordBookModel = () => {
       toggleSearchFrameVisible: action((state) => {
         state.searchFrameVisible = !state.searchFrameVisible;
       }),
-      notificationVisible: true,
+      notificationVisible: false,
       notificationText: "",
       setNotificationVisible: action((state, visible) => {
         state.notificationVisible = visible;
