@@ -239,6 +239,7 @@ const createWordBookModel = () => {
         actions.uiState.showNotification(`Word "${wordName}" not found`);
       } else {
         actions.setPointer(pos);
+        actions.fillEditorWithCurrentWord();
       }
     }),
 
@@ -339,7 +340,8 @@ const createWordBookModel = () => {
         state.dirty = false;
 
         log.info("reset pointer");
-        state.pointer = 0;
+        state.filterStarred = false;
+        state.pointer = state._words.length - 1;
       } else {
         log.error("unknown document. cannot merge.");
       }

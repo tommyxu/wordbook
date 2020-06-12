@@ -51,7 +51,7 @@ import {
   FaVrCardboard,
   FaCloud,
 } from "react-icons/fa";
-import { MdFirstPage, MdLastPage } from "react-icons/md";
+import { MdFirstPage, MdLastPage, MdLocationOn } from "react-icons/md";
 
 import { useStoreActions, useStore, useStoreState } from "./model";
 
@@ -489,10 +489,10 @@ const WbWordEditor = (props: WbWordEditorProps) => {
                 variant="outline-secondary"
                 onClick={locatePointerCallback}
               >
-                <FaSearch />
+                <MdLocationOn />
               </Button>
               <Button variant="outline-secondary" onClick={searchCallback}>
-                <FaCloud />
+                <FaSearch />
               </Button>
             </InputGroup.Append>
           </InputGroup>
