@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import _, { words } from "lodash";
+import _ from "lodash";
 import log from "loglevel";
 
 import {
@@ -28,6 +28,7 @@ export interface WordModel {
 export interface WordBookModel {
   spec: string;
 
+  id: string;
   name: string;
 
   dirty: boolean;
@@ -56,9 +57,6 @@ export interface WordBookModel {
 
   saveWord: Action<WordBookModel, Partial<WordModel>>;
 
-  remarkVisible: boolean;
-  toggleRemarkVisible: Action<WordBookModel>;
-
   editor: WordEditorModel;
   fillEditorWithCurrentWord: Action<WordBookModel>;
 
@@ -71,18 +69,9 @@ export interface WordBookModel {
   autoSetDirty: ThunkOn<WordBookModel>;
 
   uiState: WordBookUiState;
-  handleDialogAction: Thunk<WordBookModel, string>;
 }
 
-// export interface DialogActionPayload {
-//   topic: string;
-//   action: string;
-// }
-
 export interface WordBookUiState {
-  confirmDialogVisible: boolean;
-  setConfirmDialogVisible: Action<WordBookUiState, boolean>;
-
   searchFrameVisible: boolean;
   toggleSearchFrameVisible: Action<WordBookUiState>;
 
@@ -90,6 +79,9 @@ export interface WordBookUiState {
   notificationText: string;
   showNotification: Action<WordBookUiState, string>;
   setNotificationVisible: Action<WordBookUiState, boolean>;
+
+  remarkVisible: boolean;
+  toggleRemarkVisible: Action<WordBookUiState>;
 
   editorCollapsed: boolean;
   setEditorCollapsed: Action<WordBookUiState, boolean>;
@@ -109,6 +101,7 @@ export interface WordEditorModel {
 }
 
 export interface WordBookOverviewModel {
+  id: string;
   name: string;
   wordCount: number;
   version: number; // data
@@ -118,6 +111,22 @@ export interface WordBookListModel {
   books: Array<WordBookOverviewModel>;
   setBooks: Action<WordBookListModel, Array<WordBookOverviewModel>>;
   loadBooks: Thunk<WordBookListModel>;
+
+  templateId: string;
+  setTemplateId: Action<WordBookListModel, string>;
+  wordsRatio: number;
+  setWordsRatio: Action<WordBookListModel, number>;
+  newBookName: string;
+  setNewBookName: Action<WordBookListModel, string>;
+  confirmDialogVisible: boolean;
+  setConfirmDialogVisible: Action<WordBookListModel, boolean>;
+  handleDialogAction: Thunk<WordBookListModel, string>;
+  deleteDialogVisible: boolean;
+  setDeleteDialogVisible: Action<WordBookListModel, boolean>;
+  handleDeleteDialogAction: Thunk<WordBookListModel, string>;
+
+  makeNewBook: Thunk<WordBookListModel>;
+  deleteBook: Thunk<WordBookListModel, string>;
 }
 
 export interface AppModel {
@@ -181,18 +190,18 @@ const createWordBookModel = () => {
     }
   };
 
-  const showNotification = (
-    wordbookState: State<WordBookModel>,
-    text: string
-  ) => {
-    const state = wordbookState.uiState;
-    state.notificationText = text;
-    state.notificationVisible = true;
-  };
+  // const showNotification = (
+  //   wordbookState: State<WordBookModel>,
+  //   text: string
+  // ) => {
+  //   const state = wordbookState.uiState;
+  //   state.notificationText = text;
+  //   state.notificationVisible = true;
+  // };
 
   const wordbookModel: WordBookModel = {
     spec: "wordbook/1",
-
+    id: "",
     name: "",
 
     dirty: false,
@@ -297,11 +306,6 @@ const createWordBookModel = () => {
       }
     }),
 
-    remarkVisible: true,
-    toggleRemarkVisible: action((state) => {
-      state.remarkVisible = !state.remarkVisible;
-    }),
-
     editor: createWordEditorModel(),
     fillEditorWithCurrentWord: action((state) => {
       if (state.currentWord) {
@@ -314,7 +318,20 @@ const createWordBookModel = () => {
       // check spec to determine if we can support this doc
       if (doc.spec?.startsWith("wordbook/") && doc._words) {
         const input = doc._words!;
-        // regularize the input document
+
+        // client-upgrade
+        if (doc.spec === "wordbook/1") {
+          state.id = state.name;
+          state.spec = "wordbook/2";
+        } else {
+          state.id = doc.id!;
+          state.spec = doc.spec;
+        }
+
+        // reset each field if possible
+        state.name = doc.name!;
+
+        // regularize the words
         const content = _.forEach(input, (w: WordModel) => {
           if (w.stars === undefined) {
             w.stars = w.starred ? 1 : 0;
@@ -331,20 +348,11 @@ const createWordBookModel = () => {
         state._words = content;
         log.info("load words, size: ", content.length);
 
-        // reset each field if possible
-        state.spec = doc.spec;
-        if (
-          state.name === "" ||
-          state.name === undefined ||
-          state.name === null
-        ) {
-          state.name = doc.name || nanoid();
-        }
+        // version
         state.version = doc.version ?? state.version;
-        state.remarkVisible = doc.remarkVisible ?? state.remarkVisible;
         state.dirty = false;
 
-        log.info("reset pointer");
+        // pointer
         state.filterStarred = false;
         state.pointer = state._words.length - 1;
       } else {
@@ -366,29 +374,26 @@ const createWordBookModel = () => {
       // }
     }),
 
-    cloudDownload: thunk(async (actions, bookName, helper) => {
-      const resp = await fetch(
-        `${process.env.PUBLIC_URL}/api/books/${bookName}/raw`
-      );
-      const remoteDoc = await resp.json();
-      remoteDoc.name = bookName;
-      actions.load(remoteDoc);
+    cloudDownload: thunk(async (actions, bookId, helper) => {
+      const resp = await fetch(`${process.env.PUBLIC_URL}/api/books/${bookId}`);
+      const respBody = await resp.json();
+      if (respBody.status === "ok") {
+        actions.load(respBody.data);
+      }
     }),
 
     cloudUpload: thunk(async (actions, payload, helper) => {
-      log.info("current name:", helper.getState().name);
-      const name = helper.getState().name;
-      if (!name) {
-        log.info("unknown wordbank name, skip uploading");
-        return;
-      }
-      const resp = await fetch(`${process.env.PUBLIC_URL}/api/books/${name}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(helper.getState()),
-      });
+      const requestDoc = helper.getState();
+      const resp = await fetch(
+        `${process.env.PUBLIC_URL}/api/books/${requestDoc.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestDoc),
+        }
+      );
       const remote = await resp.json();
       if (remote.status === "ok") {
         actions.setDirty(false);
@@ -409,10 +414,6 @@ const createWordBookModel = () => {
     ),
 
     uiState: {
-      confirmDialogVisible: false,
-      setConfirmDialogVisible: action((state, visible) => {
-        state.confirmDialogVisible = visible;
-      }),
       searchFrameVisible: true,
       toggleSearchFrameVisible: action((state) => {
         state.searchFrameVisible = !state.searchFrameVisible;
@@ -426,6 +427,12 @@ const createWordBookModel = () => {
         state.notificationText = text;
         state.notificationVisible = true;
       }),
+
+      remarkVisible: true,
+      toggleRemarkVisible: action((state) => {
+        state.remarkVisible = !state.remarkVisible;
+      }),
+
       editorCollapsed: false,
       setEditorCollapsed: action((state, collapsed) => {
         state.editorCollapsed = collapsed;
@@ -442,22 +449,6 @@ const createWordBookModel = () => {
         state.immerseMode = !state.immerseMode;
       }),
     },
-
-    handleDialogAction: thunk(async (actions, actionKey, helper) => {
-      switch (actionKey) {
-        case "show":
-          actions.uiState.setConfirmDialogVisible(true);
-          break;
-        case "yes":
-          actions.uiState.setConfirmDialogVisible(false);
-          actions.cloudUpload();
-          break;
-        case "no":
-        case "hide":
-          actions.uiState.setConfirmDialogVisible(false);
-          break;
-      }
-    }),
   };
 
   return wordbookModel;
@@ -481,6 +472,94 @@ const createWordBookListModel = () => {
       actions.setBooks(
         (doc as ApiResponse).data as Array<WordBookOverviewModel>
       );
+    }),
+
+    templateId: "",
+    setTemplateId: action((state, bookId) => {
+      state.templateId = bookId;
+    }),
+    wordsRatio: 2,
+    setWordsRatio: action((state, ratio) => {
+      state.wordsRatio = ratio;
+    }),
+    newBookName: "",
+    setNewBookName: action((state, newBookName) => {
+      state.newBookName = newBookName;
+    }),
+    confirmDialogVisible: false,
+    setConfirmDialogVisible: action((state, visible) => {
+      state.confirmDialogVisible = visible;
+    }),
+    deleteDialogVisible: false,
+    setDeleteDialogVisible: action((state, visible) => {
+      state.deleteDialogVisible = visible;
+    }),
+    handleDeleteDialogAction: thunk(async (actions, actionKey, helper) => {
+      switch (actionKey) {
+        case "show":
+          actions.setDeleteDialogVisible(true);
+          break;
+        case "yes":
+          actions.setDeleteDialogVisible(false);
+          await actions.deleteBook(helper.getState().templateId);
+          break;
+        case "no":
+        case "hide":
+          actions.setDeleteDialogVisible(false);
+          break;
+      }
+    }),
+
+    deleteBook: thunk(async (actions, bookId, helper) => {
+      const resp = await fetch(
+        `${process.env.PUBLIC_URL}/api/books/${bookId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const result = await resp.json();
+      if (result.status === "ok") {
+        await actions.loadBooks();
+      }
+    }),
+
+    handleDialogAction: thunk(async (actions, actionKey, helper) => {
+      switch (actionKey) {
+        case "show":
+          actions.setConfirmDialogVisible(true);
+          break;
+        case "yes":
+          actions.setConfirmDialogVisible(false);
+          await actions.makeNewBook();
+          break;
+        case "no":
+        case "hide":
+          actions.setConfirmDialogVisible(false);
+          break;
+      }
+    }),
+
+    makeNewBook: thunk(async (actions, payload, helper) => {
+      let requestDoc = (({ templateId, wordsRatio, newBookName }) => ({
+        templateId,
+        name: newBookName,
+        wordsRatio: wordsRatio * 10,
+      }))(helper.getState());
+
+      const resp = await fetch(`${process.env.PUBLIC_URL}/api/books`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestDoc),
+      });
+      const result = await resp.json();
+      if (result.status === "ok") {
+        await actions.loadBooks();
+      }
     }),
   };
   return model;

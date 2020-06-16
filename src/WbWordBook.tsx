@@ -6,13 +6,7 @@ import { jsx, css } from "@emotion/core";
 
 import { Link } from "@reach/router";
 
-import React, {
-  useCallback,
-  useRef,
-  useState,
-  useEffect,
-  MouseEvent,
-} from "react";
+import React, { useCallback, useRef, useEffect, MouseEvent } from "react";
 
 import clsx from "clsx";
 
@@ -33,7 +27,6 @@ import Pagination from "react-bootstrap/Pagination";
 import PageItem from "react-bootstrap/PageItem";
 import Accordion from "react-bootstrap/Accordion";
 import Toast from "react-bootstrap/Toast";
-import Modal from "react-bootstrap/Modal";
 
 import { SwitchTransition, CSSTransition } from "react-transition-group";
 
@@ -48,8 +41,6 @@ import {
   FaSearch,
   FaArrowsAltH,
   FaTimes,
-  FaCloudUploadAlt,
-  FaCloudDownloadAlt,
   FaVrCardboard,
   FaArrowLeft,
 } from "react-icons/fa";
@@ -58,7 +49,7 @@ import { MdFirstPage, MdLastPage, MdLocationOn } from "react-icons/md";
 import { useStoreActions, useStore, useStoreState } from "./model";
 
 import type { RouteComponentProps } from "@reach/router";
-import type { WordBookModel, WordModel } from "./model";
+import type { WordModel } from "./model";
 
 // *** Component
 type WbWordCardProps = {
@@ -74,10 +65,17 @@ type WbWordCardProps = {
 };
 
 const WbWordCard = (props: WbWordCardProps) => {
-  const { word: input, remarkVisible, immerseMode } = props;
+  const {
+    word: input,
+    remarkVisible,
+    immerseMode,
+    onDelete,
+    onWordClick,
+    onWordSearch,
+  } = props;
 
   let word = input || {
-    name: "Loading ...",
+    name: "",
     remark: "",
     stars: 0,
   };
@@ -85,23 +83,23 @@ const WbWordCard = (props: WbWordCardProps) => {
   const deleteWord = useCallback(
     (evt: MouseEvent) => {
       evt.stopPropagation();
-      props.onDelete();
+      onDelete();
     },
-    [props.onDelete]
+    [onDelete]
   );
 
   const wordClickHandler = useCallback(
     (evt: MouseEvent) => {
-      props.onWordClick();
+      onWordClick();
     },
-    [props.onWordClick]
+    [onWordClick]
   );
 
   const wordSearchHandler = useCallback(
     (evt: MouseEvent) => {
-      props.onWordSearch();
+      onWordSearch();
     },
-    [props.onWordSearch]
+    [onWordSearch]
   );
 
   return (
@@ -117,7 +115,7 @@ const WbWordCard = (props: WbWordCardProps) => {
         <Card className="shadow-sm">
           <Card.Body>
             {immerseMode ? (
-              <div className="pt-2">
+              <div className="pt-4">
                 <p
                   className="display-3 mt-5 mb-5"
                   css={{
@@ -152,9 +150,6 @@ const WbWordCard = (props: WbWordCardProps) => {
                 <Card.Text
                   className={styles.WbWordCard_remark}
                   onClick={() => props.onRemarkClicked()}
-                  css={{
-                    cursor: "pointer",
-                  }}
                 >
                   {remarkVisible && (
                     <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
@@ -193,6 +188,7 @@ const WbStarRaterStyles = {
 
 const WbStarRater = (props: WbStarRaterProps) => {
   const { stars, onStarsChange } = props;
+
   const onStarClicked = useCallback(
     ({ name }) => {
       const sId = _.toSafeInteger(name);
@@ -202,7 +198,7 @@ const WbStarRater = (props: WbStarRaterProps) => {
         onStarsChange(sId);
       }
     },
-    [onStarsChange, props]
+    [onStarsChange, stars]
   );
   return (
     <span>
@@ -250,7 +246,7 @@ const WbStarToggler = (props: WbStarTogglerProps) => {
     if (onClick) {
       onClick({ name });
     }
-  }, [onClick]);
+  }, [onClick, name]);
   return (
     <span
       className={clsx(
@@ -275,10 +271,7 @@ const WbWordBookNav = () => {
     (state) => state.wordbook.offsetPointer
   );
   return (
-    <Pagination
-      size="lg"
-      className={clsx("mb-0", styles.WbWordBookNav__pagination)}
-    >
+    <Pagination size="lg" className={clsx("mb-0")}>
       <Pagination.Item onClick={() => offsetPointer(-1e5)}>
         <MdFirstPage />
       </Pagination.Item>
@@ -321,16 +314,16 @@ const WbWordBookNav = () => {
 type WbWordBookViewerProps = {};
 
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
-  log.info("render viewer", props);
-
   const word = useStoreState((state) => state.wordbook.currentWord);
-  const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
+  const remarkVisible = useStoreState(
+    (state) => state.wordbook.uiState.remarkVisible
+  );
   const immerseMode = useStoreState(
     (state) => state.wordbook.uiState.immerseMode
   );
 
   const toggleRemarkVisible = useStoreActions(
-    (actions) => actions.wordbook.toggleRemarkVisible
+    (actions) => actions.wordbook.uiState.toggleRemarkVisible
   );
   const setCurrentWordStars = useStoreActions(
     (state) => state.wordbook.setCurrentWordStars
@@ -376,22 +369,26 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
 
   return (
     <div>
-      <div className={styles.WbWordBookViewer__WordCard}>
-        <WbWordCard
-          word={word}
-          remarkVisible={remarkVisible}
-          immerseMode={immerseMode}
-          onRemarkClicked={toggleRemarkVisibleCallback}
-          onWordClick={workClickedCallback}
-          onWordSearch={wordSearchCallback}
-          onDelete={deleteCallback}
-          onStarsChange={changeStarsCallback}
-        />
+      <div className="mt-3">
+        {word ? (
+          <WbWordCard
+            word={word}
+            remarkVisible={remarkVisible}
+            immerseMode={immerseMode}
+            onRemarkClicked={toggleRemarkVisibleCallback}
+            onWordClick={workClickedCallback}
+            onWordSearch={wordSearchCallback}
+            onDelete={deleteCallback}
+            onStarsChange={changeStarsCallback}
+          />
+        ) : (
+          <div className="mt-5 mb-5">
+            <p className="text-center">No words available.</p>
+          </div>
+        )}
       </div>
-      <div className="mt-4 d-flex align-items-center align-self-center">
-        <div className="flex-fill">
-          <WbWordBookNav />
-        </div>
+      <div className="mt-4 d-flex justify-content-center">
+        <WbWordBookNav />
       </div>
     </div>
   );
@@ -456,9 +453,9 @@ const WbWordEditor = (props: WbWordEditorProps) => {
   useEffect(() => {
     if (directSearch) {
       clearDirectSearch();
-      props.onSearch(fields.name);
+      onSearch(fields.name);
     }
-  }, [directSearch, clearDirectSearch, fields, props.onSearch]);
+  }, [directSearch, clearDirectSearch, fields, onSearch]);
 
   return (
     <div>
@@ -529,9 +526,11 @@ const WbWordEditor = (props: WbWordEditorProps) => {
 };
 
 const WbWordBookViewControl = () => {
-  const remarkVisible = useStoreState((state) => state.wordbook.remarkVisible);
+  const remarkVisible = useStoreState(
+    (state) => state.wordbook.uiState.remarkVisible
+  );
   const toggleRemarkVisible = useStoreActions(
-    (actions) => actions.wordbook.toggleRemarkVisible
+    (actions) => actions.wordbook.uiState.toggleRemarkVisible
   );
 
   const filterStarred = useStoreState((state) => state.wordbook.filterStarred);
@@ -595,13 +594,11 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   const toggleSearchFrameVisible = useStoreActions(
     (actions) => actions.wordbook.uiState.toggleSearchFrameVisible
   );
-
-  const handleDialogAction = useStoreActions(
-    (actions) => actions.wordbook.handleDialogAction
-  );
-
-  const cloudDownload = useStoreActions(
-    (actions) => actions.wordbook.cloudDownload
+  // const cloudDownload = useStoreActions(
+  //   (actions) => actions.wordbook.cloudDownload
+  // );
+  const cloudUpload = useStoreActions(
+    (actions) => actions.wordbook.cloudUpload
   );
 
   const store = useStore();
@@ -641,7 +638,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
         const text = (evt.target!.result as any) as string;
         const content = JSON.parse(text);
         loadWordBook(content);
-        handleDialogAction("show");
+        cloudUpload();
       };
       // reader.onerror = function (evt) {
       //   document.getElementById("fileContents").innerHTML = "error reading file";
@@ -652,19 +649,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
 
   return (
     <div className={className}>
-      <ButtonGroup size="lg" css={{ display: "none" }}>
-        <Button variant="outline-dark" onClick={() => cloudDownload("")}>
-          <FaCloudDownloadAlt />
-        </Button>
-        <Button
-          variant={true ? "outline-dark" : "outline-secondary"}
-          onClick={() => handleDialogAction("show")}
-        >
-          <FaCloudUploadAlt />
-        </Button>
-      </ButtonGroup>
       <ButtonGroup size="lg">
-        {/* <Button variant="outline-primary"> */}
         <Link to="/pages/books" className="btn btn-outline-primary">
           <FaArrowLeft />
         </Link>
@@ -689,61 +674,6 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
         className={"d-none"}
       />
     </div>
-  );
-};
-
-interface ConfirmDialogProps {
-  show: boolean;
-  title: string;
-  message: string;
-  description?: string;
-  yesPrompt?: string;
-  noPrompt?: string;
-  onHide?: () => void;
-  onAction?: (actionKey: string) => void;
-}
-
-const ConfirmDialog = (props: ConfirmDialogProps) => {
-  const {
-    title,
-    message,
-    description,
-    yesPrompt,
-    noPrompt,
-    show,
-    onAction,
-    onHide,
-  } = props;
-  return (
-    <Modal show={show} onHide={onHide}>
-      <Modal.Header closeButton>
-        <Modal.Title>{title}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <p>{message}</p>
-        <p>{description}</p>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button
-          variant="secondary"
-          onClick={() => onAction?.("no")}
-          css={{
-            minWidth: "5rem",
-          }}
-        >
-          {noPrompt || "No"}
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => onAction?.("yes")}
-          css={{
-            minWidth: "5rem",
-          }}
-        >
-          {yesPrompt || "Yes"}
-        </Button>
-      </Modal.Footer>
-    </Modal>
   );
 };
 
@@ -783,8 +713,6 @@ const WbNotificationBoard = () => {
 type WbWordBookProps = {};
 
 export const WbWordBook = (props: WbWordBookProps) => {
-  log.info("render wbwordbook");
-
   const frameRef = useRef(null);
 
   const editorCollapsed = useStoreState(
@@ -813,27 +741,9 @@ export const WbWordBook = (props: WbWordBookProps) => {
     [frameRef]
   );
 
-  const confirmDialogVisible = useStoreState(
-    (state) => state.wordbook.uiState.confirmDialogVisible
-  );
-
-  const handleDialogAction = useStoreActions(
-    (actions) => actions.wordbook.handleDialogAction
-  );
-
-  const onConfirmDialogAction = useCallback(
-    (actionKey) => {
-      handleDialogAction(actionKey);
-      if (actionKey === "no") {
-        window.location.reload();
-      }
-    },
-    [handleDialogAction]
-  );
-
   return (
     <Container fluid>
-      <Row>
+      {/* <Row>
         <Col>
           <ConfirmDialog
             show={confirmDialogVisible}
@@ -844,7 +754,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
             onAction={onConfirmDialogAction}
           />
         </Col>
-      </Row>
+      </Row> */}
       <Row>
         <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
           <WbNotificationBoard />

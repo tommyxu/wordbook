@@ -37,10 +37,6 @@
   }
 } */
 
-.WbWordCard_remark {
-  min-height: 7rem;
-}
-
 .WbWord_searchFrame {
   width: 100%;
   height: 99vh;
@@ -50,8 +46,9 @@
   cursor: pointer;
 }
 
-.WbWordBookNav__pagination {
-  justify-content: center;
+.WbWordCard_remark {
+  min-height: 7rem;
+  cursor: pointer;
 }
 
 .WbWordCard__deleteButton {
@@ -59,12 +56,4 @@
   right: 1rem;
   background-color: transparent;
   border: 0;
-}
-
-.WbWordBookViewer__WordCard {
-  margin-top: 1rem;
-}
-
-.WbWordBook__WordEditor {
-  margin-top: 1rem;
 }

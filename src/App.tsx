@@ -2,21 +2,20 @@ import React from "react";
 
 /** @jsx jsx */
 import { jsx } from "@emotion/core";
-import { hot } from "react-hot-loader/root";
+// import { hot } from "react-hot-loader/root";
 
-import _ from "lodash";
 import log from "loglevel";
 
 import { StoreProvider, createStore, persist } from "easy-peasy";
+import { Router, Redirect } from "@reach/router";
 
 import appModel from "./model";
+
 import WbWordBookPage from "./WbWordBook";
 import WbWordBooksPage from "./WbWordBooks";
-import { Router, Redirect } from "@reach/router";
 
 // *** Store
 const store = (function initAppStore() {
-  log.info("creat new store");
   const store = createStore(
     appModel
     // persist(appModel, {
