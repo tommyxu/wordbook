@@ -2,7 +2,7 @@
 if which forever; then
 echo start serving ...
 # serve -l 8888 -s build
-forever -w --watchDirectory ./api ./api/index.mjs
+forever -w index.js
 else
 echo 'please install "forever"'
 echo 'yarn global install forever'
