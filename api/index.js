@@ -16,7 +16,7 @@ log.setDefaultLevel("info");
 
 const dataDir = "./data";
 const dataFile = "db.json";
-const buildDir = "./build";
+const buildDir = "../build";
 const specPattern = "wordbook/";
 
 const adapter = new FileSync(path.join(dataDir, dataFile));
@@ -131,6 +131,6 @@ app.get("/pages/*", function (req, res) {
 });
 
 // forward to web app
-app.use(express.static("./build"));
+app.use(express.static(buildDir));
 
 app.listen(process.env.PORT || 7000);
