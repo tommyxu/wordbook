@@ -113,15 +113,15 @@ const WbWordBooks = (props: WbWordBooksProps) => {
         onAction={handleDeleteDialogAction}
       />
       <ConfirmDialog
-        title="Make a new book"
+        title="Create a new word bank"
         show={confirmDialogVisible}
         onAction={handleDialogActionCallback}
-        yesPrompt="Create"
+        yesPrompt="OK"
         noPrompt="Cancel"
       >
         <Form ref={formRef} validated={true} onSubmit={handleFormSubmit}>
           <Form.Group controlId="wordsRatioRangeSelector">
-            <Form.Label>New book name:</Form.Label>
+            <Form.Label>Word bank name:</Form.Label>
             <Form.Control
               ref={newBookNameRef}
               type="text"

@@ -300,7 +300,8 @@ const createWordBookModel = () => {
         nw.id = nanoid();
         nw.name = newWord.name || "<missed>";
         nw.remark = newWord.remark || "<missed>";
-        nw.createdOn = 0;
+        nw.stars = 1;
+        nw.starred = true;
         state._words.push(nw);
         setNewPointer(state);
       }

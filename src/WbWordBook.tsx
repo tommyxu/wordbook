@@ -734,9 +734,11 @@ export const WbWordBook = (props: WbWordBookProps) => {
 
   const searchWordCallback = useCallback(
     (name) => {
-      const url = `https://dictionary.cambridge.org/dictionary/english/${name}`;
       const f = (frameRef.current as any) as HTMLIFrameElement;
-      f.setAttribute("src", url);
+      if (f) {
+        const url = `https://dictionary.cambridge.org/dictionary/english/${name}`;
+        f.setAttribute("src", url);
+      }
     },
     [frameRef]
   );
