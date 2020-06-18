@@ -2,15 +2,19 @@
   "name": "wordbook-api",
   "version": "1.0.0",
   "main": "index.js",
+  "exports": "./index.js",
   "license": "MIT",
   "private": true,
-  "type": "module",
   "dependencies": {
+    "@types/express": "^4.17.6",
+    "@types/lowdb": "^1.0.9",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
     "loglevel": "^1.6.8",
     "lowdb": "^1.0.0",
     "nanoid": "^3.1.10",
-    "nanoid-dictionary": "^3.0.0"
+    "nanoid-dictionary": "^3.0.0",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.5"
   }
 }

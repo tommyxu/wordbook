@@ -1,16 +1,17 @@
-import express from "express";
-import fs from "fs/promises";
+// import fs from "fs/promises";
 // import fsLegacy from "fs";
 import path from "path";
 import process from "process";
 
-import _ from "lodash";
+import express from "express";
+import _, { CollectionChain } from "lodash";
 import log from "loglevel";
 
-import low from "lowdb";
+import low, { LowdbSync } from "lowdb";
 import FileSync from "lowdb/adapters/FileSync.js";
 
 import { customAlphabet } from "nanoid";
+import Lowdb from "lowdb";
 const nanoid = customAlphabet("1234567890abcdef", 12);
 
 log.setDefaultLevel("info");
@@ -20,19 +21,29 @@ const dataFile = "db.json";
 const buildDir = "../build";
 const specPattern = "wordbook/";
 
-const adapter = new FileSync(path.join(dataDir, dataFile));
-const db = low(adapter);
+interface BookItem {
+  id: string;
+  name: string;
+  _words: Array<string>;
+  version: number;
+}
 
-const getBooks = () => {
-  return db.get("books").value();
-};
+class Dao {
+  db: LowdbSync<any>;
+  constructor() {
+    const adapter = new FileSync(path.join(dataDir, dataFile));
+    this.db = low(adapter);
+  }
+  getAllBooks = () => this.db.get("books") as CollectionChain<BookItem>;
+  findBook = (bookId: string) => this.getAllBooks().find({ id: bookId });
+}
 
-const findBook = (bookId) => db.get("books").find({ id: bookId }).value();
+const dao = new Dao();
 
 const app = express();
 app.use(express.json());
 
-const makeResult = (payload, result = true) => {
+const makeResult = (payload: any = undefined, result = true) => {
   if (result) {
     return {
       status: "ok",
@@ -50,7 +61,7 @@ const makeResult = (payload, result = true) => {
 
 app.get("/api/books", async (req, res) => {
   const result = [];
-  for (const book of getBooks()) {
+  for (const book of dao.getAllBooks().value()) {
     result.push({
       id: book.id,
       name: book.name,
@@ -58,21 +69,22 @@ app.get("/api/books", async (req, res) => {
       version: book.version,
     });
   }
-  res.json(makeResult(_.sortBy(result, (item) => -item.version)));
+  const sortedBooks = _.sortBy(result, (item) => -item.version);
+  res.json(makeResult(sortedBooks));
 });
 
 // get state
 app.get("/api/books/:bookId", (req, res) => {
-  const matched = findBook(req.params.bookId);
+  const matched = dao.findBook(req.params.bookId).value();
   if (matched) {
     res.json(makeResult(matched));
   } else {
-    res.status(404).json(makeResult("no such book", false));
+    res.status(404).json(makeResult("no such book.", false));
   }
 });
 
-const createNewId = (name) => {
-  if (name && name.match(/^[a-z]+$/gi)) {
+const createNewId = (name?: string) => {
+  if (name?.match(/^[a-z]+$/gi)) {
     return name;
   } else {
     return nanoid();
@@ -83,14 +95,14 @@ const createNewId = (name) => {
 app.post("/api/books", async (req, res) => {
   const { templateId, name, wordsRatio } = req.body;
 
-  const tpl = db.get("books").find({ id: templateId }).cloneDeep().value();
+  const tpl = dao.getAllBooks().find({ id: templateId }).cloneDeep().value();
   tpl.id = createNewId();
   tpl.name = name;
   tpl._words = _.sampleSize(
     tpl._words,
     _.round((tpl._words.length * wordsRatio) / 100)
   );
-  db.get("books").push(tpl).write();
+  dao.getAllBooks().push(tpl).write();
 
   res.json(
     makeResult({
@@ -103,12 +115,12 @@ app.post("/api/books", async (req, res) => {
 // update
 app.post("/api/books/:bookId", async (req, res) => {
   const { bookId } = req.params;
-  const matched = findBook(bookId);
+  const matched = dao.findBook(bookId).value();
   if (matched && req.body) {
     const newDoc = req.body;
     const spec = newDoc.spec;
     if (spec && spec.startsWith(specPattern)) {
-      db.get("books").find({ id: bookId }).assign(newDoc).write();
+      dao.getAllBooks().find({ id: bookId }).assign(newDoc).write();
     }
     res.json(makeResult({ id: bookId }));
   } else {
@@ -118,7 +130,7 @@ app.post("/api/books/:bookId", async (req, res) => {
 
 app.delete("/api/books/:bookId", async (req, res) => {
   const { bookId } = req.params;
-  db.get("books").remove({ id: bookId }).write();
+  dao.getAllBooks().remove({ id: bookId }).write();
   res.json(makeResult());
 });
 
@@ -134,4 +146,6 @@ app.get("/pages/*", function (req, res) {
 // forward to web app
 app.use(express.static(buildDir));
 
-app.listen(process.env.PORT || 7000);
+const listeningPort = process.env.PORT || 7000;
+log.info("Listening on port", listeningPort);
+app.listen(listeningPort);
