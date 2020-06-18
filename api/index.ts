@@ -11,7 +11,6 @@ import low, { LowdbSync } from "lowdb";
 import FileSync from "lowdb/adapters/FileSync.js";
 
 import { customAlphabet } from "nanoid";
-import Lowdb from "lowdb";
 const nanoid = customAlphabet("1234567890abcdef", 12);
 
 log.setDefaultLevel("info");
@@ -146,6 +145,6 @@ app.get("/pages/*", function (req, res) {
 // forward to web app
 app.use(express.static(buildDir));
 
-const listeningPort = process.env.PORT || 7000;
+const listeningPort = process.env.PORT ?? 7000;
 log.info("Listening on port", listeningPort);
 app.listen(listeningPort);
