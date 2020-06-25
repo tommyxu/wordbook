@@ -48,6 +48,7 @@
 
 .WbWordCard_remark {
   min-height: 7rem;
+  margin-bottom: 0.25rem;
   cursor: pointer;
 }
 

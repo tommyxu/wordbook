@@ -67,7 +67,7 @@ import { IconType } from "react-icons/lib";
 
 // *** Component
 type WbWordCardProps = {
-  word: WordModel | undefined | null;
+  word?: WordModel;
   remarkVisible: boolean;
   immerseMode: boolean;
 
@@ -91,6 +91,7 @@ const WbWordCard = (props: WbWordCardProps) => {
   let word = input || {
     name: "",
     remark: "",
+    example: "",
     stars: 0,
   };
 
@@ -166,7 +167,17 @@ const WbWordCard = (props: WbWordCardProps) => {
                   onClick={() => props.onRemarkClicked()}
                 >
                   {remarkVisible && (
-                    <span css={{ whiteSpace: "pre-line" }}>{word.remark}</span>
+                    <div>
+                      <span css={{ whiteSpace: "pre-line" }}>
+                        {word.remark}
+                      </span>
+                      <div
+                        className="mt-1"
+                        css={{ whiteSpace: "pre-line", fontStyle: "italic" }}
+                      >
+                        {word.example}
+                      </div>
+                    </div>
                   )}
                 </Card.Text>
               </React.Fragment>
@@ -424,8 +435,10 @@ const WbWordEditor = (props: WbWordEditorProps) => {
     (actions) => actions.wordbook.editor.clearValues
   );
   const addNewWordCallback = useCallback(() => {
-    addNewWord(fields);
-    clearFields();
+    if (fields.name) {
+      addNewWord(fields);
+      clearFields();
+    }
   }, [addNewWord, clearFields, fields]);
   const searchCallback = useCallback(() => {
     onSearch(fields.name);
@@ -515,15 +528,20 @@ const WbWordEditor = (props: WbWordEditorProps) => {
           <Form.Control
             as="textarea"
             type="text"
-            rows={4}
+            rows={3}
             value={fields.remark}
             onChange={(evt) => setValues({ remark: evt.target.value })}
           />
-          {/* 
-          <Form.Text className="text-muted">
-            We'll never share your email with anyone else.
-          </Form.Text> 
-          */}
+        </Form.Group>
+        <Form.Group controlId="wordExample">
+          <Form.Label>Example</Form.Label>
+          <Form.Control
+            as="textarea"
+            type="text"
+            rows={3}
+            value={fields.example}
+            onChange={(evt) => setValues({ example: evt.target.value })}
+          />
         </Form.Group>
         <div className="text-center">
           <Button

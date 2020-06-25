@@ -21,6 +21,7 @@ export interface WordModel {
   type: string[];
   bookmarked: boolean;
   remark: string;
+  example: string;
   translation: string;
   createdOn: number;
   lastModified: number;
@@ -158,6 +159,7 @@ const createWordModel = () => {
     name: "",
     remark: "",
     translation: "",
+    example: "",
     createdOn: new Date().getTime(),
     lastModified: new Date().getTime(),
   };
@@ -302,22 +304,28 @@ const createWordBookModel = () => {
       const pExist = _.findIndex(state._words, (item) => {
         return item.name === newWord.name;
       });
+
+      const fixRemark = (remark?: string) => {
+        let ret = remark ?? "";
+        ret = _.trim(ret);
+        if (ret.endsWith(":")) {
+          ret = _.trimEnd(ret, ":");
+          ret += ".";
+        }
+        return ret;
+      };
+
       // if the old word is found, just update
       if (pExist >= 0) {
-        if (newWord.remark) {
-          state._words[pExist].remark = newWord.remark;
-          if (state._words[pExist].remark === newWord.remark) {
-            // keep the old
-          } else {
-            // state._words[pExist].remark += "\n" + newWord.remark;
-          }
-          state._words[pExist].lastModified = new Date().getTime();
-        }
+        state._words[pExist].remark = fixRemark(newWord.remark);
+        state._words[pExist].example = _.trim(newWord.example ?? "");
+        state._words[pExist].lastModified = new Date().getTime();
       } else {
         const nw = createWordModel();
         nw.id = nanoid();
-        nw.name = newWord.name || "<missed>";
-        nw.remark = newWord.remark || "<missed>";
+        nw.name = newWord.name!;
+        nw.remark = fixRemark(newWord.remark ?? "<missed>");
+        nw.example = _.trim(newWord.example ?? "");
         nw.stars = 1;
         nw.starred = true;
         state._words.push(nw);
@@ -330,49 +338,51 @@ const createWordBookModel = () => {
       if (state.currentWord) {
         state.editor.fields.name = state.currentWord.name;
         state.editor.fields.remark = state.currentWord.remark;
+        state.editor.fields.example = state.currentWord.example;
       }
     }),
 
     merge: action((state, doc) => {
       state._words = state._words.concat(doc._words!);
+      setNewPointer(state, 0);
     }),
-
     load: action((state, doc) => {
       // check spec to determine if we can support this doc
       if (doc.spec?.startsWith("wordbook/") && doc._words) {
-        const input = doc._words!;
-
         // client spec upgrade
         if (doc.spec === "wordbook/1") {
-          state.id = state.name;
-          state.spec = "wordbook/2";
-        } else {
-          state.id = doc.id!;
-          state.spec = doc.spec;
+          doc.id = doc.name;
+          doc.spec = "wordbook/2";
+        }
+
+        if (doc.spec === "wordbook/2") {
+          const input = doc._words!;
+          const content = _.map(input, (src: WordModel) => {
+            const w = createWordModel();
+            _.assign(w, src);
+            // if (w.stars === undefined) {
+            //   w.stars = w.starred ? 1 : 0;
+            // }
+            // w.remark = _.trim(w.remark);
+            // w.name = _.trim(w.name);
+            // if (w.createdOn === 0 || w.createdOn === undefined) {
+            //   w.createdOn = new Date().getTime();
+            // }
+            // if (w.lastModified === 0 || w.lastModified === undefined) {
+            //   w.lastModified = w.createdOn;
+            // }
+            return w;
+          });
+          doc._words = content;
+          doc.spec = "wordbook/3";
         }
 
         // reset each field if possible
+        state.id = doc.id!;
+        state.spec = doc.spec;
         state.name = doc.name!;
-
-        // regularize the words
-        const content = _.forEach(input, (w: WordModel) => {
-          if (w.stars === undefined) {
-            w.stars = w.starred ? 1 : 0;
-          }
-          w.remark = _.trim(w.remark);
-          w.name = _.trim(w.name);
-          if (w.createdOn === 0 || w.createdOn === undefined) {
-            w.createdOn = new Date().getTime();
-          }
-          if (w.lastModified === 0 || w.lastModified === undefined) {
-            w.lastModified = w.createdOn;
-          }
-        });
-        state._words = content;
-        log.info("load words, size: ", content.length);
-
-        // version
-        state.version = doc.version ?? state.version;
+        state._words = doc._words!;
+        state.version = doc.version!;
         state.dirty = false;
 
         // pointer
