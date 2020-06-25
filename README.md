@@ -2,7 +2,11 @@
 
 High:
 
+- Search word by meaning or example
+- Translation -> Word mode
+
 Low:
 
-- Detect overwrite the old word. same = replace, different = merge
-- Auto create empty template
+- Merge words to remove duplicate
+- Detect old word to prevent overwrite. 
+- Auto get word meaning
