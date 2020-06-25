@@ -44,12 +44,26 @@ import {
   FaVrCardboard,
   FaArrowLeft,
 } from "react-icons/fa";
-import { MdFirstPage, MdLastPage, MdLocationOn } from "react-icons/md";
+import {
+  MdFirstPage,
+  MdLastPage,
+  MdLocationOn,
+  MdError,
+  MdWarning,
+  MdInfo,
+  MdSettingsApplications,
+} from "react-icons/md";
 
-import { useStoreActions, useStore, useStoreState } from "./model";
+import {
+  useStoreActions,
+  useStore,
+  useStoreState,
+  NotificationLevel,
+} from "./model";
 
 import type { RouteComponentProps } from "@reach/router";
 import type { WordModel } from "./model";
+import { IconType } from "react-icons/lib";
 
 // *** Component
 type WbWordCardProps = {
@@ -687,6 +701,22 @@ const WbNotificationBoard = () => {
   const notificationText = useStoreState(
     (state) => state.wordbook.uiState.notificationText
   );
+  const notificationLevel = useStoreState(
+    (state) => state.wordbook.uiState.notificationLevel
+  );
+
+  const mappingIcon = (level: NotificationLevel) => {
+    let icon: IconType = MdInfo;
+    if (level === NotificationLevel.Info) {
+      icon = MdInfo;
+    } else if (level === NotificationLevel.Warning) {
+      icon = MdWarning;
+    } else if (level === NotificationLevel.Error) {
+      icon = MdError;
+    }
+    return icon;
+  };
+  const LevelIcon = mappingIcon(notificationLevel);
 
   return (
     <Toast
@@ -702,8 +732,9 @@ const WbNotificationBoard = () => {
       }}
     >
       <Toast.Header>
-        <strong className="mr-auto">Warning</strong>
-        <small>just now</small>
+        <LevelIcon />
+        <strong className="mr-auto ml-2">{notificationLevel}</strong>
+        {/* <small>just now</small> */}
       </Toast.Header>
       <Toast.Body>{notificationText}</Toast.Body>
     </Toast>

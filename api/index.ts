@@ -40,7 +40,11 @@ class Dao {
 const dao = new Dao();
 
 const app = express();
-app.use(express.json());
+app.use(
+  express.json({
+    limit: "2mb",
+  })
+);
 
 const makeResult = (payload: any = undefined, result = true) => {
   if (result) {
@@ -121,6 +125,7 @@ app.post("/api/books/:bookId", async (req, res) => {
     if (spec && spec.startsWith(specPattern)) {
       dao.getAllBooks().find({ id: bookId }).assign(newDoc).write();
     }
+    // res.status(404).json(makeResult("doc not found", false));
     res.json(makeResult({ id: bookId }));
   } else {
     res.status(404).json(makeResult("doc not found", false));

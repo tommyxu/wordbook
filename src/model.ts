@@ -71,14 +71,26 @@ export interface WordBookModel {
   uiState: WordBookUiState;
 }
 
+export enum NotificationLevel {
+  Warning = "Warning",
+  Error = "Error",
+  Info = "Info",
+}
+
+export type NotificationConfig = {
+  text: string;
+  level: NotificationLevel;
+};
+
 export interface WordBookUiState {
   searchFrameVisible: boolean;
   toggleSearchFrameVisible: Action<WordBookUiState>;
 
   notificationVisible: boolean;
   notificationText: string;
-  showNotification: Action<WordBookUiState, string>;
+  notificationLevel: NotificationLevel;
   setNotificationVisible: Action<WordBookUiState, boolean>;
+  showNotification: Action<WordBookUiState, NotificationConfig>;
 
   remarkVisible: boolean;
   toggleRemarkVisible: Action<WordBookUiState>;
@@ -245,7 +257,10 @@ const createWordBookModel = () => {
         (word) => word.name === wordName
       );
       if (pos === -1) {
-        actions.uiState.showNotification(`Word "${wordName}" not found`);
+        actions.uiState.showNotification({
+          level: NotificationLevel.Warning,
+          text: `Word "${wordName}" not found.`,
+        });
       } else {
         actions.setPointer(pos);
         actions.fillEditorWithCurrentWord();
@@ -395,10 +410,36 @@ const createWordBookModel = () => {
           body: JSON.stringify(requestDoc),
         }
       );
-      const remote = await resp.json();
-      if (remote.status === "ok") {
-        actions.setDirty(false);
-      }
+
+      const extractBody = async (
+        response: Response,
+        successHandler: (body: any) => void,
+        errorHandler: (error?: any) => void = () => {}
+      ) => {
+        if (response.ok) {
+          const remote = await resp.json();
+          if (remote.status === "ok") {
+            successHandler(remote.body);
+          } else {
+            errorHandler(remote.body);
+          }
+        } else {
+          errorHandler();
+        }
+      };
+
+      await extractBody(
+        resp,
+        () => {
+          actions.setDirty(false);
+        },
+        () => {
+          actions.uiState.showNotification({
+            level: NotificationLevel.Error,
+            text: "Failed to sync with server. Try later.",
+          });
+        }
+      );
     }),
 
     autoSetDirty: thunkOn(
@@ -421,11 +462,13 @@ const createWordBookModel = () => {
       }),
       notificationVisible: false,
       notificationText: "",
+      notificationLevel: NotificationLevel.Info,
       setNotificationVisible: action((state, visible) => {
         state.notificationVisible = visible;
       }),
-      showNotification: action((state, text) => {
+      showNotification: action((state, { text, level }) => {
         state.notificationText = text;
+        state.notificationLevel = level;
         state.notificationVisible = true;
       }),
 
