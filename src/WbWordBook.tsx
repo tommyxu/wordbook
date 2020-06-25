@@ -603,7 +603,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
 
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const loadWordBook = useStoreActions((actions) => actions.wordbook.load);
+  const mergeBook = useStoreActions((actions) => actions.wordbook.merge);
 
   const toggleSearchFrameVisible = useStoreActions(
     (actions) => actions.wordbook.uiState.toggleSearchFrameVisible
@@ -651,7 +651,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
       reader.onload = function (evt) {
         const text = (evt.target!.result as any) as string;
         const content = JSON.parse(text);
-        loadWordBook(content);
+        mergeBook(content);
         cloudUpload();
       };
       // reader.onerror = function (evt) {

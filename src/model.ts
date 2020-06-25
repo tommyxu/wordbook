@@ -21,6 +21,7 @@ export interface WordModel {
   type: string[];
   bookmarked: boolean;
   remark: string;
+  translation: string;
   createdOn: number;
   lastModified: number;
 }
@@ -61,6 +62,7 @@ export interface WordBookModel {
   fillEditorWithCurrentWord: Action<WordBookModel>;
 
   load: Action<WordBookModel, Partial<WordBookModel>>;
+  merge: Action<WordBookModel, Partial<WordBookModel>>;
   loadDefault: Thunk<WordBookModel>;
 
   cloudUpload: Thunk<WordBookModel>;
@@ -155,6 +157,7 @@ const createWordModel = () => {
     bookmarked: false,
     name: "",
     remark: "",
+    translation: "",
     createdOn: new Date().getTime(),
     lastModified: new Date().getTime(),
   };
@@ -330,12 +333,16 @@ const createWordBookModel = () => {
       }
     }),
 
+    merge: action((state, doc) => {
+      state._words = state._words.concat(doc._words!);
+    }),
+
     load: action((state, doc) => {
       // check spec to determine if we can support this doc
       if (doc.spec?.startsWith("wordbook/") && doc._words) {
         const input = doc._words!;
 
-        // client-upgrade
+        // client spec upgrade
         if (doc.spec === "wordbook/1") {
           state.id = state.name;
           state.spec = "wordbook/2";
