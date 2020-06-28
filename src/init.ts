@@ -1,12 +1,9 @@
 import "react-hot-loader";
 
-import "typeface-roboto";
-import "typeface-roboto-slab";
+// import "typeface-roboto";
+// import "typeface-roboto-slab";
 
-// import "typeface-open-sans";
-// import "bootstrap/dist/css/bootstrap.min.css";
-
-import "./bootstrap.min.css";
+import "./styles.css";
 import "./index.css";
 
 import log from "loglevel";

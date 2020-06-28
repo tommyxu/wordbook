@@ -47,11 +47,15 @@ import {
 import {
   MdFirstPage,
   MdLastPage,
+  MdNavigateNext,
+  MdNavigateBefore,
   MdLocationOn,
   MdError,
   MdWarning,
   MdInfo,
-  MdSettingsApplications,
+  MdBrightnessHigh,
+  MdBrightnessMedium,
+  MdBrightnessLow,
 } from "react-icons/md";
 
 import {
@@ -59,18 +63,19 @@ import {
   useStore,
   useStoreState,
   NotificationLevel,
+  ForwardStepActionMode,
 } from "./model";
+
+import { WordCardViewModel } from "./model";
+import { IconType } from "react-icons/lib";
 
 import type { RouteComponentProps } from "@reach/router";
 import type { WordModel } from "./model";
-import { IconType } from "react-icons/lib";
 
 // *** Component
 type WbWordCardProps = {
   word?: WordModel;
-  remarkVisible: boolean;
-  immerseMode: boolean;
-
+  viewModel: WordCardViewModel;
   onWordClick: () => void;
   onWordSearch: () => void;
   onDelete: () => void;
@@ -80,15 +85,14 @@ type WbWordCardProps = {
 
 const WbWordCard = (props: WbWordCardProps) => {
   const {
-    word: input,
-    remarkVisible,
-    immerseMode,
+    word: wordProp,
+    viewModel,
     onDelete,
     onWordClick,
     onWordSearch,
   } = props;
 
-  let word = input || {
+  const word = wordProp ?? {
     name: "",
     remark: "",
     example: "",
@@ -127,66 +131,53 @@ const WbWordCard = (props: WbWordCardProps) => {
         timeout={200}
         classNames="fade"
       >
-        <Card className="shadow-sm">
+        <Card className="shadow">
           <Card.Body>
-            {immerseMode ? (
-              <div className="pt-4">
-                <p
-                  className="display-3 mt-5 mb-5"
-                  css={{
-                    textAlign: "center",
-                  }}
+            <React.Fragment>
+              <Card.Title
+                css={{
+                  cursor: "pointer",
+                }}
+                onClick={wordClickHandler}
+                onDoubleClick={wordSearchHandler}
+              >
+                <Button
+                  variant="light"
+                  onClick={deleteWord}
+                  className={styles.WbWordCard__deleteButton}
                 >
-                  <span className="font-weight-bolder typeface-roboto">
-                    {word.name}
+                  <FaTimes />
+                </Button>
+                <div className="d-flex align-items-center">
+                  <span className="h1">
+                    {viewModel === WordCardViewModel.Full ||
+                    viewModel === WordCardViewModel.WordOnly
+                      ? word.name
+                      : "\xa0\xa0\xa0"}
                   </span>
-                </p>
-              </div>
-            ) : (
-              <React.Fragment>
-                <Card.Title
-                  css={{
-                    cursor: "pointer",
-                  }}
-                  onClick={wordClickHandler}
-                  onDoubleClick={wordSearchHandler}
-                >
-                  <Button
-                    variant="light"
-                    onClick={deleteWord}
-                    className={styles.WbWordCard__deleteButton}
-                  >
-                    <FaTimes />
-                  </Button>
-                  <div className="d-flex align-items-center">
-                    <span className="h1">{word.name}</span>
-                  </div>
-                </Card.Title>
-                <Card.Text
-                  className={styles.WbWordCard_remark}
-                  onClick={() => props.onRemarkClicked()}
-                >
-                  {remarkVisible && (
-                    <div>
-                      <span css={{ whiteSpace: "pre-line" }}>
-                        {word.remark}
-                      </span>
-                      <div
-                        className="mt-1"
-                        css={{ whiteSpace: "pre-line", fontStyle: "italic" }}
-                      >
-                        {word.example}
-                      </div>
+                </div>
+              </Card.Title>
+              <Card.Text
+                as="div"
+                className={styles.WbWordCard__remark}
+                onClick={() => props.onRemarkClicked()}
+              >
+                <div>
+                  {(viewModel === WordCardViewModel.Full ||
+                    viewModel === WordCardViewModel.DefinitionsOnly) && (
+                    <div css={{ whiteSpace: "pre-line" }}>{word.remark}</div>
+                  )}
+                  {viewModel === WordCardViewModel.Full && (
+                    <div
+                      className="mt-1"
+                      css={{ whiteSpace: "pre-line", fontStyle: "italic" }}
+                    >
+                      {word.example}
                     </div>
                   )}
-                </Card.Text>
-              </React.Fragment>
-            )}
-            {/* <Card.Link href="#">Card Link</Card.Link>
-        <Card.Link href="#">Another Link</Card.Link> */}
-            {/* <ToggleButton checked={word.bookmarked} type="checkbox" value="bookmarked" variant="info" onChange={props.onToggleBookmarked}>
-          <FaBook />
-        </ToggleButton> */}
+                </div>
+              </Card.Text>
+            </React.Fragment>
             <div className={clsx("d-flex", "flex-row-reverse")}>
               <WbStarRater
                 stars={word.stars}
@@ -277,7 +268,7 @@ const WbStarToggler = (props: WbStarTogglerProps) => {
       className={clsx(
         className,
         "btn",
-        checked ? "text-warning" : "text-muted",
+        checked ? "text-secondary" : "text-muted",
         { "text-secondary": !checked }
       )}
       css={WbStarTogglerStyles.icon(props)}
@@ -289,12 +280,34 @@ const WbStarToggler = (props: WbStarTogglerProps) => {
 };
 
 const WbWordBookNav = () => {
-  log.info("render booknav");
   const pointer = useStoreState((state) => state.wordbook.pointer);
   const wordSize = useStoreState((state) => state.wordbook.currentWordSize);
   const offsetPointer = useStoreActions(
     (state) => state.wordbook.offsetPointer
   );
+
+  const immerseMode = useStoreState(
+    (state) => state.wordbook.uiState.immerseMode
+  );
+  const stepperMode = useStoreState(
+    (state) => state.wordbook.uiState.stepperMode
+  );
+  const setStepperMode = useStoreActions(
+    (state) => state.wordbook.uiState.setStepperMode
+  );
+  const forwardStepCallback = useCallback(() => {
+    if (immerseMode) {
+      // log.info("set to move forward", immerseMode, stepperMode);
+      if (stepperMode === ForwardStepActionMode.MOVE_FORWARD) {
+        setStepperMode(ForwardStepActionMode.SHOW_CARD);
+        offsetPointer(1);
+      } else if (stepperMode === ForwardStepActionMode.SHOW_CARD) {
+        setStepperMode(ForwardStepActionMode.MOVE_FORWARD);
+      }
+    } else {
+      offsetPointer(1);
+    }
+  }, [immerseMode, stepperMode, setStepperMode, offsetPointer]);
   return (
     <Pagination size="lg" className={clsx("mb-0")}>
       <Pagination.Item onClick={() => offsetPointer(-1e5)}>
@@ -305,14 +318,13 @@ const WbWordBookNav = () => {
         onClick={() => offsetPointer(-1)}
         css={{
           textAlign: "center",
-          width: "5rem",
+          minWidth: "5rem",
         }}
       />
       <PageItem
-        active
         css={{
           textAlign: "center",
-          width: "9rem",
+          minWidth: "8rem",
         }}
       >
         <span>
@@ -321,13 +333,18 @@ const WbWordBookNav = () => {
           </small>
         </span>
       </PageItem>
-      <Pagination.Next
-        onClick={() => offsetPointer(1)}
+      <Pagination.Item
+        active={
+          immerseMode && stepperMode === ForwardStepActionMode.MOVE_FORWARD
+        }
+        onClick={forwardStepCallback}
         css={{
           textAlign: "center",
-          width: "5rem",
+          minWidth: "5rem",
         }}
-      />
+      >
+        <MdNavigateNext />
+      </Pagination.Item>
       <Pagination.Last onClick={() => offsetPointer(10)} />
       <Pagination.Item onClick={() => offsetPointer(1e5)}>
         <MdLastPage />
@@ -340,16 +357,11 @@ type WbWordBookViewerProps = {};
 
 const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const word = useStoreState((state) => state.wordbook.currentWord);
-  const remarkVisible = useStoreState(
-    (state) => state.wordbook.uiState.remarkVisible
-  );
-  const immerseMode = useStoreState(
-    (state) => state.wordbook.uiState.immerseMode
+
+  const cardViewModel = useStoreState(
+    (state) => state.wordbook.uiState.compCardViewModel
   );
 
-  const toggleRemarkVisible = useStoreActions(
-    (actions) => actions.wordbook.uiState.toggleRemarkVisible
-  );
   const setCurrentWordStars = useStoreActions(
     (state) => state.wordbook.setCurrentWordStars
   );
@@ -377,10 +389,6 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
     requestWordSearch();
   }, [fillEditorWithCurrentWord, setEditorCollapsed, requestWordSearch]);
 
-  const toggleRemarkVisibleCallback = useCallback(() => {
-    toggleRemarkVisible();
-  }, [toggleRemarkVisible]);
-
   const deleteCallback = useCallback(() => deleteCurrentWord(), [
     deleteCurrentWord,
   ]);
@@ -398,9 +406,8 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
         {word ? (
           <WbWordCard
             word={word}
-            remarkVisible={remarkVisible}
-            immerseMode={immerseMode}
-            onRemarkClicked={toggleRemarkVisibleCallback}
+            viewModel={cardViewModel}
+            onRemarkClicked={workClickedCallback}
             onWordClick={workClickedCallback}
             onWordSearch={wordSearchCallback}
             onDelete={deleteCallback}
@@ -508,16 +515,13 @@ const WbWordEditor = (props: WbWordEditorProps) => {
               Please choose a username.
             </Form.Control.Feedback>
             <InputGroup.Append>
-              <Button variant="outline-secondary" onClick={clearInput}>
+              <Button variant="outline-primary" onClick={clearInput}>
                 <FaTimes />
               </Button>
-              <Button
-                variant="outline-secondary"
-                onClick={locatePointerCallback}
-              >
+              <Button variant="outline-primary" onClick={locatePointerCallback}>
                 <MdLocationOn />
               </Button>
-              <Button variant="outline-secondary" onClick={searchCallback}>
+              <Button variant="outline-primary" onClick={searchCallback}>
                 <FaSearch />
               </Button>
             </InputGroup.Append>
@@ -557,14 +561,55 @@ const WbWordEditor = (props: WbWordEditorProps) => {
   );
 };
 
-const WbWordBookViewControl = () => {
-  const remarkVisible = useStoreState(
-    (state) => state.wordbook.uiState.remarkVisible
+const WbWordCardViewModelControl = () => {
+  const cardViewModel = useStoreState(
+    (state) => state.wordbook.uiState.cardViewModel
   );
-  const toggleRemarkVisible = useStoreActions(
-    (actions) => actions.wordbook.uiState.toggleRemarkVisible
+  const setCardViewModel = useStoreActions(
+    (actions) => actions.wordbook.uiState.setCardViewModel
   );
 
+  const radios = [
+    {
+      value: WordCardViewModel.Full,
+      buttonIcon: MdBrightnessHigh,
+    },
+    {
+      value: WordCardViewModel.WordOnly,
+      buttonIcon: MdBrightnessLow,
+    },
+    {
+      value: WordCardViewModel.DefinitionsOnly,
+      buttonIcon: MdBrightnessMedium,
+    },
+  ];
+
+  return (
+    <ToggleButtonGroup
+      name="WbWordCardViewModelSelector__ToggleButtonGroup"
+      type="radio"
+      size="lg"
+      value={cardViewModel}
+    >
+      {radios.map((radio, idx) => (
+        <ToggleButton
+          key={idx}
+          type="radio"
+          variant="outline-primary"
+          name="radio"
+          value={radio.value}
+          onChange={(evt: React.ChangeEvent<any>) =>
+            setCardViewModel(parseInt(evt.currentTarget.value))
+          }
+        >
+          <radio.buttonIcon />
+        </ToggleButton>
+      ))}
+    </ToggleButtonGroup>
+  );
+};
+
+const WbWordBookViewControl = () => {
   const filterStarred = useStoreState((state) => state.wordbook.filterStarred);
   const toggleFilterStarred = useStoreActions(
     (actions) => actions.wordbook.toggleFilterStarred
@@ -581,19 +626,18 @@ const WbWordBookViewControl = () => {
   }, [toggleImmerseMode]);
 
   const optionChecked = [];
-  remarkVisible && optionChecked.push("remarkVisible");
   filterStarred && optionChecked.push("filterStarred");
   immerseMode && optionChecked.push("immerseMode");
 
   return (
     <ToggleButtonGroup type="checkbox" size="lg" value={optionChecked}>
-      <ToggleButton
+      {/* <ToggleButton
         variant="outline-primary"
         value="remarkVisible"
-        onChange={() => toggleRemarkVisible()}
+        onChange={() => toggleImmerseModeCallback()}
       >
         <FaEye />
-      </ToggleButton>
+      </ToggleButton> */}
       <ToggleButton
         variant="outline-primary"
         value="immerseMode"
@@ -680,7 +724,7 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   };
 
   return (
-    <div className={className}>
+    <div className={clsx(className)}>
       <ButtonGroup size="lg">
         <Link to="/pages/books" className="btn btn-outline-primary">
           <FaArrowLeft />
@@ -811,6 +855,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
           <WbNotificationBoard />
           <div className="d-flex justify-content-between mt-3">
             <WbWordBookOps />
+            <WbWordCardViewModelControl />
             <WbWordBookViewControl />
           </div>
           <WbWordBookViewer />
@@ -842,7 +887,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
               title="cambridge_dictionary_iframe"
               frameBorder={0}
               ref={frameRef}
-              className={styles.WbWord_searchFrame}
+              className={styles.WbWord__searchFrame}
             />
           </Col>
         )}

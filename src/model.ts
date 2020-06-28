@@ -15,16 +15,22 @@ import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from "easy-peasy";
 // *** Model
 export interface WordModel {
   id: string;
-  name: string;
+  name: string; // alias: word
   stars: number;
   starred: boolean;
   type: string[];
   bookmarked: boolean;
-  remark: string;
-  example: string;
-  translation: string;
+  remark: string; // alias: definition
+  example: string; // alias: usage
+  translation: string; // not used now
   createdOn: number;
   lastModified: number;
+}
+
+export enum WordCardViewModel {
+  Full, // word + definition + usage
+  WordOnly,
+  DefinitionsOnly,
 }
 
 export interface WordBookModel {
@@ -64,6 +70,7 @@ export interface WordBookModel {
 
   load: Action<WordBookModel, Partial<WordBookModel>>;
   merge: Action<WordBookModel, Partial<WordBookModel>>;
+
   loadDefault: Thunk<WordBookModel>;
 
   cloudUpload: Thunk<WordBookModel>;
@@ -85,6 +92,11 @@ export type NotificationConfig = {
   level: NotificationLevel;
 };
 
+export enum ForwardStepActionMode {
+  SHOW_CARD,
+  MOVE_FORWARD,
+}
+
 export interface WordBookUiState {
   searchFrameVisible: boolean;
   toggleSearchFrameVisible: Action<WordBookUiState>;
@@ -95,9 +107,6 @@ export interface WordBookUiState {
   setNotificationVisible: Action<WordBookUiState, boolean>;
   showNotification: Action<WordBookUiState, NotificationConfig>;
 
-  remarkVisible: boolean;
-  toggleRemarkVisible: Action<WordBookUiState>;
-
   editorCollapsed: boolean;
   setEditorCollapsed: Action<WordBookUiState, boolean>;
 
@@ -107,6 +116,14 @@ export interface WordBookUiState {
 
   immerseMode: boolean;
   toggleImmerseMode: Action<WordBookUiState>;
+
+  stepperMode: ForwardStepActionMode;
+  setStepperMode: Action<WordBookUiState, ForwardStepActionMode>;
+
+  cardViewModel: WordCardViewModel;
+  setCardViewModel: Action<WordBookUiState, WordCardViewModel>;
+
+  compCardViewModel: Computed<WordBookUiState, WordCardViewModel>;
 }
 
 export interface WordEditorModel {
@@ -489,11 +506,6 @@ const createWordBookModel = () => {
         state.notificationVisible = true;
       }),
 
-      remarkVisible: true,
-      toggleRemarkVisible: action((state) => {
-        state.remarkVisible = !state.remarkVisible;
-      }),
-
       editorCollapsed: false,
       setEditorCollapsed: action((state, collapsed) => {
         state.editorCollapsed = collapsed;
@@ -505,9 +517,35 @@ const createWordBookModel = () => {
       clearDirectSearch: action((state) => {
         state.directSearch = false;
       }),
+
       immerseMode: false,
       toggleImmerseMode: action((state) => {
         state.immerseMode = !state.immerseMode;
+        if (state.immerseMode) {
+          state.stepperMode = ForwardStepActionMode.SHOW_CARD;
+        }
+      }),
+      stepperMode: ForwardStepActionMode.SHOW_CARD,
+      setStepperMode: action((state, mode) => {
+        state.stepperMode = mode;
+      }),
+
+      cardViewModel: WordCardViewModel.Full,
+      setCardViewModel: action((state, cardViewModel) => {
+        state.cardViewModel = cardViewModel;
+      }),
+
+      compCardViewModel: computed((state) => {
+        if (state.immerseMode) {
+          switch (state.stepperMode) {
+            case ForwardStepActionMode.SHOW_CARD:
+              return state.cardViewModel;
+            case ForwardStepActionMode.MOVE_FORWARD:
+              return WordCardViewModel.Full;
+          }
+        } else {
+          return state.cardViewModel;
+        }
       }),
     },
   };

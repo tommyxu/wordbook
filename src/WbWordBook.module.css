@@ -37,17 +37,13 @@
   }
 } */
 
-.WbWord_searchFrame {
+.WbWord__searchFrame {
   width: 100%;
   height: 99vh;
 }
 
-.WbWordCard__title {
-  cursor: pointer;
-}
-
-.WbWordCard_remark {
-  min-height: 7rem;
+.WbWordCard__remark {
+  min-height: 7.5rem;
   margin-bottom: 0.25rem;
   cursor: pointer;
 }
