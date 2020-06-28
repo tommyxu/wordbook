@@ -327,7 +327,7 @@ const createWordBookModel = () => {
         ret = _.trim(ret);
         if (ret.endsWith(":")) {
           ret = _.trimEnd(ret, ":");
-          ret += ".";
+          // ret += ".";
         }
         return ret;
       };

@@ -859,7 +859,7 @@ export const WbWordBook = (props: WbWordBookProps) => {
             <WbWordBookViewControl />
           </div>
           <WbWordBookViewer />
-          <div className="mt-4">
+          <div className="mt-3">
             <Accordion activeKey={"" + editorCollapsed}>
               <div className="text-center">
                 <Accordion.Toggle
