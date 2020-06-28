@@ -177,7 +177,7 @@ const WbWordBooks = (props: WbWordBooksProps) => {
                 </Card.Text>
                 <div className="d-flex justify-content-end">
                   <Link to={book.id}>
-                    <Button className="ml-1" variant="success">
+                    <Button className="ml-1 mw-6r" variant="success">
                       Open
                     </Button>
                   </Link>

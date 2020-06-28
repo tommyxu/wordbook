@@ -21,6 +21,25 @@ code {
   right: 0;
 }
 
+.mw-1r {
+  min-width: 1rem;
+}
+.mw-2r {
+  min-width: 2rem;
+}
+.mw-3r {
+  min-width: 3rem;
+}
+.mw-4r {
+  min-width: 4rem;
+}
+.mw-5r {
+  min-width: 5rem;
+}
+.mw-6r {
+  min-width: 6rem;
+}
+
 .typeface-open-sans {
   font-family: "Open Sans";
 }
