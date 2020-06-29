@@ -16,8 +16,8 @@ import FlexSearch from "flexsearch";
 import flexsearch_en from "flexsearch/lang/en.min.js";
 
 const index = FlexSearch.create({
-  // stemmer: flexsearch_en,
-  // filter: flexsearch_en,
+  stemmer: flexsearch_en,
+  filter: flexsearch_en,
   // profile: "match",
   // encode: "extra",
   doc: {
@@ -608,7 +608,7 @@ const createWordBookModel = () => {
         }
       }),
 
-      searchModeEnabled: true,
+      searchModeEnabled: false,
       setSearchModeEnabled: action((state, enabled) => {
         state.searchModeEnabled = enabled;
       }),
