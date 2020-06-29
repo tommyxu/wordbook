@@ -6,7 +6,7 @@ import { jsx, css } from "@emotion/core";
 
 import { Link } from "@reach/router";
 
-import React, { useCallback, useRef, useEffect, MouseEvent } from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 
 import clsx from "clsx";
 
@@ -16,7 +16,6 @@ import _ from "lodash";
 import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButtonGroup from "react-bootstrap/ToggleButtonGroup";
-import Card from "react-bootstrap/Card";
 import ToggleButton from "react-bootstrap/ToggleButton";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -28,14 +27,10 @@ import PageItem from "react-bootstrap/PageItem";
 import Accordion from "react-bootstrap/Accordion";
 import Toast from "react-bootstrap/Toast";
 
-import { SwitchTransition, CSSTransition } from "react-transition-group";
-
 import {
   FaStar,
   FaAngleDoubleDown,
   FaAngleDoubleUp,
-  FaRegStar,
-  FaEye,
   FaDownload,
   FaUpload,
   FaSearch,
@@ -56,6 +51,7 @@ import {
   MdBrightnessHigh,
   MdBrightnessMedium,
   MdBrightnessLow,
+  MdSearch,
 } from "react-icons/md";
 
 import {
@@ -70,214 +66,9 @@ import { WordCardViewModel } from "./model";
 import { IconType } from "react-icons/lib";
 
 import type { RouteComponentProps } from "@reach/router";
-import type { WordModel } from "./model";
 
-// *** Component
-type WbWordCardProps = {
-  word?: WordModel;
-  viewModel: WordCardViewModel;
-  onWordClick: () => void;
-  onWordSearch: () => void;
-  onDelete: () => void;
-  onStarsChange: (numStars: number) => void;
-  onRemarkClicked: () => void;
-};
-
-const WbWordCard = (props: WbWordCardProps) => {
-  const {
-    word: wordProp,
-    viewModel,
-    onDelete,
-    onWordClick,
-    onWordSearch,
-  } = props;
-
-  const word = wordProp ?? {
-    name: "",
-    remark: "",
-    example: "",
-    stars: 0,
-  };
-
-  const deleteWord = useCallback(
-    (evt: MouseEvent) => {
-      evt.stopPropagation();
-      onDelete();
-    },
-    [onDelete]
-  );
-
-  const wordClickHandler = useCallback(
-    (evt: MouseEvent) => {
-      onWordClick();
-    },
-    [onWordClick]
-  );
-
-  const wordSearchHandler = useCallback(
-    (evt: MouseEvent) => {
-      onWordSearch();
-    },
-    [onWordSearch]
-  );
-
-  return (
-    <SwitchTransition>
-      <CSSTransition
-        key={word.name}
-        in
-        mountOnEnter
-        unmountOnExit
-        timeout={200}
-        classNames="fade"
-      >
-        <Card className="shadow">
-          <Card.Body>
-            <React.Fragment>
-              <Card.Title
-                css={{
-                  cursor: "pointer",
-                }}
-                onClick={wordClickHandler}
-                onDoubleClick={wordSearchHandler}
-              >
-                <Button
-                  variant="light"
-                  onClick={deleteWord}
-                  className={styles.WbWordCard__deleteButton}
-                >
-                  <FaTimes />
-                </Button>
-                <div className="d-flex align-items-center">
-                  <span className="h1">
-                    {viewModel === WordCardViewModel.Full ||
-                    viewModel === WordCardViewModel.WordOnly
-                      ? word.name
-                      : "\xa0\xa0\xa0"}
-                  </span>
-                </div>
-              </Card.Title>
-              <Card.Text
-                as="div"
-                className={styles.WbWordCard__remark}
-                onClick={() => props.onRemarkClicked()}
-              >
-                <div>
-                  {(viewModel === WordCardViewModel.Full ||
-                    viewModel === WordCardViewModel.DefinitionsOnly) && (
-                    <div css={{ whiteSpace: "pre-line" }}>{word.remark}</div>
-                  )}
-                  {viewModel === WordCardViewModel.Full && (
-                    <div
-                      className="mt-1"
-                      css={{ whiteSpace: "pre-line", fontStyle: "italic" }}
-                    >
-                      {word.example}
-                    </div>
-                  )}
-                </div>
-              </Card.Text>
-            </React.Fragment>
-            <div className={clsx("d-flex", "flex-row-reverse")}>
-              <WbStarRater
-                stars={word.stars}
-                onStarsChange={props.onStarsChange}
-              />
-            </div>
-          </Card.Body>
-        </Card>
-      </CSSTransition>
-    </SwitchTransition>
-  );
-};
-
-interface WbStarRaterProps {
-  stars: number;
-  onStarsChange: (value: number) => void;
-}
-
-const WbStarRaterStyles = {
-  toggler: {
-    paddingLeft: 0,
-  },
-};
-
-const WbStarRater = (props: WbStarRaterProps) => {
-  const { stars, onStarsChange } = props;
-
-  const onStarClicked = useCallback(
-    ({ name }) => {
-      const sId = _.toSafeInteger(name);
-      if (stars === 1 && sId === 1) {
-        onStarsChange(0);
-      } else {
-        onStarsChange(sId);
-      }
-    },
-    [onStarsChange, stars]
-  );
-  return (
-    <span>
-      <WbStarToggler
-        name={"3"}
-        checked={stars > 2}
-        onClick={onStarClicked}
-        css={WbStarRaterStyles.toggler}
-      />
-      <WbStarToggler
-        name={"2"}
-        checked={stars > 1}
-        onClick={onStarClicked}
-        css={WbStarRaterStyles.toggler}
-      />
-      <WbStarToggler
-        name={"1"}
-        checked={stars > 0}
-        onClick={onStarClicked}
-        css={WbStarRaterStyles.toggler}
-      />
-    </span>
-  );
-};
-
-interface WbStarTogglerProps {
-  name?: string;
-  className?: string;
-  checked: boolean;
-  onClick?: (evt: { name?: string }) => void;
-}
-
-const WbStarTogglerStyles = {
-  icon: (props: WbStarTogglerProps) =>
-    !props.checked
-      ? {
-          opacity: 0.4,
-        }
-      : {},
-};
-
-const WbStarToggler = (props: WbStarTogglerProps) => {
-  const { checked, className, name, onClick } = props;
-  const clickCallback = useCallback(() => {
-    if (onClick) {
-      onClick({ name });
-    }
-  }, [onClick, name]);
-  return (
-    <span
-      className={clsx(
-        className,
-        "btn",
-        checked ? "text-secondary" : "text-muted",
-        { "text-secondary": !checked }
-      )}
-      css={WbStarTogglerStyles.icon(props)}
-      onClick={clickCallback}
-    >
-      <h4>{checked ? <FaStar /> : <FaRegStar />}</h4>
-    </span>
-  );
-};
+import { WbWordBookSearch } from "./WbWordBookSearch";
+import { WbWordCard } from "./WbWordCard";
 
 const WbWordBookNav = () => {
   const pointer = useStoreState((state) => state.wordbook.pointer);
@@ -297,7 +88,6 @@ const WbWordBookNav = () => {
   );
   const forwardStepCallback = useCallback(() => {
     if (immerseMode) {
-      // log.info("set to move forward", immerseMode, stepperMode);
       if (stepperMode === ForwardStepActionMode.MOVE_FORWARD) {
         setStepperMode(ForwardStepActionMode.SHOW_CARD);
         offsetPointer(1);
@@ -309,7 +99,7 @@ const WbWordBookNav = () => {
     }
   }, [immerseMode, stepperMode, setStepperMode, offsetPointer]);
   return (
-    <Pagination size="lg" className={clsx("mb-0")}>
+    <Pagination size="lg" className="mb-2">
       <Pagination.Item onClick={() => offsetPointer(-1e5)}>
         <MdFirstPage />
       </Pagination.Item>
@@ -318,20 +108,19 @@ const WbWordBookNav = () => {
         onClick={() => offsetPointer(-1)}
         css={{
           textAlign: "center",
-          minWidth: "5rem",
+          minWidth: "4.5rem",
         }}
       />
       <PageItem
+        disabled
         css={{
           textAlign: "center",
           minWidth: "8rem",
         }}
       >
-        <span>
-          <small>
-            {pointer + 1} / {wordSize}
-          </small>
-        </span>
+        <small>
+          {pointer + 1} / {wordSize}
+        </small>
       </PageItem>
       <Pagination.Item
         active={
@@ -340,7 +129,7 @@ const WbWordBookNav = () => {
         onClick={forwardStepCallback}
         css={{
           textAlign: "center",
-          minWidth: "5rem",
+          minWidth: "4.5rem",
         }}
       >
         <MdNavigateNext />
@@ -361,6 +150,12 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   const cardViewModel = useStoreState(
     (state) => state.wordbook.uiState.compCardViewModel
   );
+  const toggleCardDefinitionVisible = useStoreActions(
+    (state) => state.wordbook.uiState.toggleCardDefinitionVisible
+  );
+  const toggleCardDefinitionVisibleCallback = useCallback(() => {
+    toggleCardDefinitionVisible();
+  }, [toggleCardDefinitionVisible]);
 
   const setCurrentWordStars = useStoreActions(
     (state) => state.wordbook.setCurrentWordStars
@@ -389,9 +184,9 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
     requestWordSearch();
   }, [fillEditorWithCurrentWord, setEditorCollapsed, requestWordSearch]);
 
-  const deleteCallback = useCallback(() => deleteCurrentWord(), [
-    deleteCurrentWord,
-  ]);
+  const deleteCallback = useCallback(() => {
+    deleteCurrentWord();
+  }, [deleteCurrentWord]);
 
   const changeStarsCallback = useCallback(
     (value) => {
@@ -402,23 +197,21 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
 
   return (
     <div className="mt-4">
-      <div>
-        {word ? (
-          <WbWordCard
-            word={word}
-            viewModel={cardViewModel}
-            onRemarkClicked={workClickedCallback}
-            onWordClick={workClickedCallback}
-            onWordSearch={wordSearchCallback}
-            onDelete={deleteCallback}
-            onStarsChange={changeStarsCallback}
-          />
-        ) : (
-          <div className="mt-5 mb-5">
-            <p className="text-center">No words available.</p>
-          </div>
-        )}
-      </div>
+      {word ? (
+        <WbWordCard
+          word={word}
+          viewModel={cardViewModel}
+          onRemarkClicked={toggleCardDefinitionVisibleCallback}
+          onWordClick={workClickedCallback}
+          onWordSearch={wordSearchCallback}
+          onDelete={deleteCallback}
+          onStarsChange={changeStarsCallback}
+        />
+      ) : (
+        <div className="mt-5 mb-5">
+          <p className="text-center">No words available.</p>
+        </div>
+      )}
       <div className="mt-4 d-flex justify-content-center">
         <WbWordBookNav />
       </div>
@@ -460,14 +253,14 @@ const WbWordEditor = (props: WbWordEditorProps) => {
   );
   const clearInput = useCallback(
     (evt) => {
-      setValues({ name: "", remark: "" });
+      clearFields();
       _.defer(() => {
         if (wordNameRef.current) {
           wordNameRef.current!.focus();
         }
       });
     },
-    [setValues]
+    [clearFields, setValues]
   );
 
   const directSearch = useStoreState(
@@ -492,72 +285,80 @@ const WbWordEditor = (props: WbWordEditorProps) => {
   }, [directSearch, clearDirectSearch, fields, onSearch]);
 
   return (
-    <div>
-      <Form>
-        <Form.Group controlId="wordName">
-          <Form.Label>Word</Form.Label>
-          {/* 
+    <Form>
+      <Form.Group controlId="wordName">
+        <Form.Label>Word</Form.Label>
+        {/* 
           <Form.Text className="text-muted">
             We'll never share your email with anyone else.
           </Form.Text> 
           */}
-          <InputGroup>
-            <Form.Control
-              type="text"
-              placeholder="word..."
-              required
-              ref={wordNameRef}
-              value={fields.name}
-              onChange={(evt) => setValues({ name: evt.target.value })}
-              onKeyUp={detectEnter}
-            />
-            <Form.Control.Feedback type="invalid">
-              Please choose a username.
-            </Form.Control.Feedback>
-            <InputGroup.Append>
-              <Button variant="outline-primary" onClick={clearInput}>
-                <FaTimes />
-              </Button>
-              <Button variant="outline-primary" onClick={locatePointerCallback}>
-                <MdLocationOn />
-              </Button>
-              <Button variant="outline-primary" onClick={searchCallback}>
-                <FaSearch />
-              </Button>
-            </InputGroup.Append>
-          </InputGroup>
-        </Form.Group>
-        <Form.Group controlId="wordRemark">
-          <Form.Label>Remark</Form.Label>
+        <InputGroup>
           <Form.Control
-            as="textarea"
             type="text"
-            rows={3}
-            value={fields.remark}
-            onChange={(evt) => setValues({ remark: evt.target.value })}
+            placeholder=""
+            required
+            ref={wordNameRef}
+            value={fields.name}
+            onChange={(evt) => setValues({ name: evt.target.value })}
+            onKeyUp={detectEnter}
           />
-        </Form.Group>
-        <Form.Group controlId="wordExample">
-          <Form.Label>Example</Form.Label>
-          <Form.Control
-            as="textarea"
-            type="text"
-            rows={3}
-            value={fields.example}
-            onChange={(evt) => setValues({ example: evt.target.value })}
-          />
-        </Form.Group>
-        <div className="text-center">
-          <Button
-            as="input"
-            type="submit"
-            value="Save"
-            readOnly
-            onClick={addNewWordCallback}
-          />
-        </div>
-      </Form>
-    </div>
+          <Form.Control.Feedback type="invalid">
+            Please choose a username.
+          </Form.Control.Feedback>
+          <InputGroup.Append>
+            <Button variant="outline-primary" onClick={clearInput}>
+              <FaTimes />
+            </Button>
+            <Button variant="outline-primary" onClick={locatePointerCallback}>
+              <MdLocationOn />
+            </Button>
+            <Button variant="outline-primary" onClick={searchCallback}>
+              <FaSearch />
+            </Button>
+          </InputGroup.Append>
+        </InputGroup>
+      </Form.Group>
+      <Form.Group controlId="wordRemark">
+        <Form.Label>Remark</Form.Label>
+        <Form.Control
+          as="textarea"
+          type="text"
+          rows={2}
+          value={fields.remark}
+          onChange={(evt) => setValues({ remark: evt.target.value })}
+        />
+      </Form.Group>
+      <Form.Group controlId="wordExample">
+        <Form.Label>Example</Form.Label>
+        <Form.Control
+          as="textarea"
+          type="text"
+          rows={2}
+          value={fields.example}
+          onChange={(evt) => setValues({ example: evt.target.value })}
+        />
+      </Form.Group>
+      {/* <Form.Group controlId="wordTranslation">
+        <Form.Label>Translation</Form.Label>
+        <Form.Control
+          as="textarea"
+          type="text"
+          rows={1}
+          value={fields.translation}
+          onChange={(evt) => setValues({ translation: evt.target.value })}
+        />
+      </Form.Group> */}
+      <div className="text-center">
+        <Button
+          as="input"
+          type="submit"
+          value="Save"
+          readOnly
+          onClick={addNewWordCallback}
+        />
+      </div>
+    </Form>
   );
 };
 
@@ -588,7 +389,6 @@ const WbWordCardViewModelControl = () => {
     <ToggleButtonGroup
       name="WbWordCardViewModelSelector__ToggleButtonGroup"
       type="radio"
-      size="lg"
       value={cardViewModel}
     >
       {radios.map((radio, idx) => (
@@ -630,7 +430,7 @@ const WbWordBookViewControl = () => {
   immerseMode && optionChecked.push("immerseMode");
 
   return (
-    <ToggleButtonGroup type="checkbox" size="lg" value={optionChecked}>
+    <ToggleButtonGroup type="checkbox" value={optionChecked}>
       {/* <ToggleButton
         variant="outline-primary"
         value="remarkVisible"
@@ -670,13 +470,13 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   const toggleSearchFrameVisible = useStoreActions(
     (actions) => actions.wordbook.uiState.toggleSearchFrameVisible
   );
-  // const cloudDownload = useStoreActions(
-  //   (actions) => actions.wordbook.cloudDownload
-  // );
+  const searchWord = useStoreActions((actions) => actions.wordbook.searchWord);
   const cloudUpload = useStoreActions(
     (actions) => actions.wordbook.cloudUpload
   );
-
+  const setSearchModeEnabled = useStoreActions(
+    (actions) => actions.wordbook.uiState.setSearchModeEnabled
+  );
   const store = useStore();
 
   const downloadFile = () => {
@@ -725,19 +525,24 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
 
   return (
     <div className={clsx(className)}>
-      <ButtonGroup size="lg">
-        <Link to="/pages/books" className="btn btn-outline-primary">
+      <ButtonGroup>
+        <Link to="/pages/books" className="btn btn-outline-dark">
           <FaArrowLeft />
         </Link>
-        {/* </Button> */}
-        <Button variant="outline-primary" onClick={downloadFile}>
+        <Button
+          variant="outline-dark"
+          onClick={() => setSearchModeEnabled(true)}
+        >
+          <FaSearch />
+        </Button>
+        <Button variant="outline-dark" onClick={downloadFile}>
           <FaDownload />
         </Button>
-        <Button variant="outline-primary" onClick={chooseFile}>
+        <Button variant="outline-dark" onClick={chooseFile}>
           <FaUpload />
         </Button>
         <Button
-          variant="outline-primary"
+          variant="outline-dark"
           onClick={() => toggleSearchFrameVisible()}
         >
           <FaArrowsAltH />
@@ -791,6 +596,7 @@ const WbNotificationBoard = () => {
         position: "absolute",
         bottom: "1rem",
         left: "calc(50% - 12rem)",
+        zIndex: 10,
       }}
     >
       <Toast.Header>
@@ -803,11 +609,11 @@ const WbNotificationBoard = () => {
   );
 };
 
-type WbWordBookProps = {};
+interface WbWordBookCardsProps {
+  onSearch: (name: string) => void;
+}
 
-export const WbWordBook = (props: WbWordBookProps) => {
-  const frameRef = useRef(null);
-
+const WbWordBookCards = ({ onSearch }: WbWordBookCardsProps) => {
   const editorCollapsed = useStoreState(
     (state) => state.wordbook.uiState.editorCollapsed
   );
@@ -820,12 +626,41 @@ export const WbWordBook = (props: WbWordBookProps) => {
     },
     [setEditorCollapsed, editorCollapsed]
   );
+  return (
+    <div>
+      <div className="d-flex justify-content-between">
+        <WbWordBookOps />
+        <WbWordCardViewModelControl />
+        <WbWordBookViewControl />
+      </div>
+      <WbWordBookViewer />
+      <Accordion activeKey={"" + editorCollapsed}>
+        <div className="text-center">
+          <Accordion.Toggle
+            as={Button}
+            variant="link"
+            eventKey="true"
+            onClick={wordEditorToggleCallback}
+          >
+            {!editorCollapsed ? <FaAngleDoubleDown /> : <FaAngleDoubleUp />}
+          </Accordion.Toggle>
+        </div>
+        <Accordion.Collapse eventKey="true">
+          <WbWordEditor onSearch={onSearch} />
+        </Accordion.Collapse>
+      </Accordion>
+    </div>
+  );
+};
 
+type WbWordBookProps = {};
+
+export const WbWordBook = (props: WbWordBookProps) => {
+  const frameRef = useRef(null);
   const searchFrameVisible = useStoreState(
     (state) => state.wordbook.uiState.searchFrameVisible
   );
-
-  const searchWordCallback = useCallback(
+  const searchInFrameCallback = useCallback(
     (name) => {
       const f = (frameRef.current as any) as HTMLIFrameElement;
       if (f) {
@@ -835,50 +670,29 @@ export const WbWordBook = (props: WbWordBookProps) => {
     },
     [frameRef]
   );
+  const searchModeEnabled = useStoreState(
+    (state) => state.wordbook.uiState.searchModeEnabled
+  );
 
   return (
-    <Container fluid>
-      {/* <Row>
-        <Col>
-          <ConfirmDialog
-            show={confirmDialogVisible}
-            title="Warning"
-            message="Importing finished. "
-            description="'Yes' to save it to the server. 'No' to cancel importing operation."
-            onHide={() => handleDialogAction("hide")}
-            onAction={onConfirmDialogAction}
-          />
-        </Col>
-      </Row> */}
+    <Container fluid className="pr-0 pl-0">
       <Row>
-        <Col xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}>
-          <WbNotificationBoard />
-          <div className="d-flex justify-content-between mt-3">
-            <WbWordBookOps />
-            <WbWordCardViewModelControl />
-            <WbWordBookViewControl />
-          </div>
-          <WbWordBookViewer />
-          <div className="mt-3">
-            <Accordion activeKey={"" + editorCollapsed}>
-              <div className="text-center">
-                <Accordion.Toggle
-                  as={Button}
-                  variant="link"
-                  eventKey="true"
-                  onClick={wordEditorToggleCallback}
-                >
-                  {!editorCollapsed ? (
-                    <FaAngleDoubleDown />
-                  ) : (
-                    <FaAngleDoubleUp />
-                  )}
-                </Accordion.Toggle>
-              </div>
-              <Accordion.Collapse eventKey="true">
-                <WbWordEditor onSearch={searchWordCallback} />
-              </Accordion.Collapse>
-            </Accordion>
+        <WbNotificationBoard />
+      </Row>
+      <Row noGutters>
+        <Col
+          css={{
+            height: "100vh",
+            overflow: "auto",
+          }}
+          xs={searchFrameVisible ? { span: 5 } : { span: 6, offset: 3 }}
+        >
+          <div className="pt-3 pb-3 pl-3 pr-4">
+            {searchModeEnabled ? (
+              <WbWordBookSearch />
+            ) : (
+              <WbWordBookCards onSearch={searchInFrameCallback} />
+            )}
           </div>
         </Col>
         {searchFrameVisible && (

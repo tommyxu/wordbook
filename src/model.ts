@@ -12,6 +12,36 @@ import {
 } from "easy-peasy";
 import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from "easy-peasy";
 
+import FlexSearch from "flexsearch";
+import flexsearch_en from "flexsearch/lang/en.min.js";
+
+const index = FlexSearch.create({
+  // stemmer: flexsearch_en,
+  // filter: flexsearch_en,
+  // profile: "match",
+  // encode: "extra",
+  doc: {
+    id: "id",
+    field: {
+      name: {
+        encode: "simple",
+        tokenize: "forward",
+      },
+      remark: {
+        encode: "simple",
+        tokenize: "forward",
+      },
+      translation: {
+        encode: false,
+        tokenize: function (str: string) {
+          return str.replace(/[\x20-\x7F]/g, "").split("");
+        },
+      },
+    }, // ["name", "remark", "example", "translation"],
+  },
+});
+log.info("index.info", index.info());
+
 // *** Model
 export interface WordModel {
   id: string;
@@ -65,6 +95,7 @@ export interface WordBookModel {
   deleteCurrentWord: Action<WordBookModel>;
 
   saveWord: Action<WordBookModel, Partial<WordModel>>;
+  searchWord: Thunk<WordBookModel, string>;
 
   editor: WordEditorModel;
   fillEditorWithCurrentWord: Action<WordBookModel>;
@@ -102,6 +133,10 @@ export interface WordBookUiState {
   searchFrameVisible: boolean;
   toggleSearchFrameVisible: Action<WordBookUiState>;
 
+  directSearch: boolean;
+  requestDirectSearch: Action<WordBookUiState>;
+  clearDirectSearch: Action<WordBookUiState>;
+
   notificationVisible: boolean;
   notificationText: string;
   notificationLevel: NotificationLevel;
@@ -111,10 +146,6 @@ export interface WordBookUiState {
   editorCollapsed: boolean;
   setEditorCollapsed: Action<WordBookUiState, boolean>;
 
-  directSearch: boolean;
-  requestDirectSearch: Action<WordBookUiState>;
-  clearDirectSearch: Action<WordBookUiState>;
-
   immerseMode: boolean;
   toggleImmerseMode: Action<WordBookUiState>;
 
@@ -123,8 +154,12 @@ export interface WordBookUiState {
 
   cardViewModel: WordCardViewModel;
   setCardViewModel: Action<WordBookUiState, WordCardViewModel>;
+  toggleCardDefinitionVisible: Action<WordBookUiState>;
 
   compCardViewModel: Computed<WordBookUiState, WordCardViewModel>;
+
+  searchModeEnabled: boolean;
+  setSearchModeEnabled: Action<WordBookUiState, boolean>;
 }
 
 export interface WordEditorModel {
@@ -338,6 +373,7 @@ const createWordBookModel = () => {
       if (pExist >= 0) {
         state._words[pExist].remark = fixRemark(newWord.remark);
         state._words[pExist].example = _.trim(newWord.example ?? "");
+        state._words[pExist].translation = _.trim(newWord.translation ?? "");
         state._words[pExist].lastModified = new Date().getTime();
       } else {
         const nw = createWordModel();
@@ -345,11 +381,19 @@ const createWordBookModel = () => {
         nw.name = newWord.name!;
         nw.remark = fixRemark(newWord.remark ?? "<missed>");
         nw.example = _.trim(newWord.example ?? "");
+        nw.translation = _.trim(newWord.translation ?? "");
         nw.stars = 1;
         nw.starred = true;
         state._words.push(nw);
         setNewPointer(state);
       }
+    }),
+    searchWord: thunk((actions, query, helper) => {
+      const wordsDoc = helper.getState()._words;
+      index.add(wordsDoc); // build index
+      const result = index.search(query, { limit: 10 });
+      // log.info(result);
+      return result;
     }),
 
     editor: createWordEditorModel(),
@@ -358,6 +402,7 @@ const createWordBookModel = () => {
         state.editor.fields.name = state.currentWord.name;
         state.editor.fields.remark = state.currentWord.remark;
         state.editor.fields.example = state.currentWord.example;
+        state.editor.fields.translation = state.currentWord.translation;
       }
     }),
 
@@ -542,6 +587,13 @@ const createWordBookModel = () => {
       setCardViewModel: action((state, cardViewModel) => {
         state.cardViewModel = cardViewModel;
       }),
+      toggleCardDefinitionVisible: action((state) => {
+        if (state.cardViewModel === WordCardViewModel.Full) {
+          state.cardViewModel = WordCardViewModel.WordOnly;
+        } else if (state.cardViewModel === WordCardViewModel.WordOnly) {
+          state.cardViewModel = WordCardViewModel.Full;
+        }
+      }),
 
       compCardViewModel: computed((state) => {
         if (state.immerseMode) {
@@ -554,6 +606,11 @@ const createWordBookModel = () => {
         } else {
           return state.cardViewModel;
         }
+      }),
+
+      searchModeEnabled: true,
+      setSearchModeEnabled: action((state, enabled) => {
+        state.searchModeEnabled = enabled;
       }),
     },
   };
