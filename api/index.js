@@ -80,7 +80,10 @@ app.post("/api/books", async (req, res) => {
     const tpl = dao.getAllBooks().find({ id: templateId }).cloneDeep().value();
     tpl.id = createNewId();
     tpl.name = name;
-    tpl._words = _.sampleSize(tpl._words, _.round((tpl._words.length * wordsRatio) / 100));
+    tpl._words =
+        wordsRatio === 100
+            ? tpl._words // do not change order of words
+            : _.sampleSize(tpl._words, _.round((tpl._words.length * wordsRatio) / 100));
     dao.getAllBooks().push(tpl).write();
     res.json(makeResult({
         id: tpl.id,
