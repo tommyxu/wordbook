@@ -148,6 +148,7 @@ const WbWordBooks = (props: WbWordBooksProps) => {
         </Form>
       </ConfirmDialog>
       <div
+        className="mt-3"
         css={css`
           display: grid;
           grid-template-columns: 33.3% 33.3% 33.3%;
