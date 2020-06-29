@@ -401,8 +401,8 @@ const WbWordBookViewer = (props: WbWordBookViewerProps) => {
   );
 
   return (
-    <div>
-      <div className="mt-3">
+    <div className="mt-4">
+      <div>
         {word ? (
           <WbWordCard
             word={word}

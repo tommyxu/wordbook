@@ -174,20 +174,20 @@ const WbWordBooks = (props: WbWordBooksProps) => {
                 </Card.Text>
                 <div className="d-flex justify-content-end">
                   <Link to={book.id}>
-                    <Button className="ml-1 mw-6r" variant="primary">
+                    <Button className="ml-1 mw-5r" variant="primary">
                       Open
                     </Button>
                   </Link>
                   <Button
                     className="ml-1"
-                    variant="secondary"
+                    variant="dark"
                     onClick={createMakeBookDialogActionHandler(book.id)}
                   >
                     <FaClone />
                   </Button>
                   <Button
                     className="ml-1"
-                    variant="secondary"
+                    variant="dark"
                     onClick={createDeleteDialogActionHandler(book.id)}
                   >
                     <FaTrashAlt />

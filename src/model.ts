@@ -23,6 +23,7 @@ export interface WordModel {
   remark: string; // alias: definition
   example: string; // alias: usage
   translation: string; // not used now
+  pronunciations: string; // not used now
   createdOn: number;
   lastModified: number;
 }
@@ -175,8 +176,9 @@ const createWordModel = () => {
     bookmarked: false,
     name: "",
     remark: "",
-    translation: "",
     example: "",
+    translation: "",
+    pronunciations: "",
     createdOn: new Date().getTime(),
     lastModified: new Date().getTime(),
   };
@@ -372,7 +374,7 @@ const createWordBookModel = () => {
           doc.spec = "wordbook/2";
         }
 
-        if (doc.spec === "wordbook/2") {
+        if (_.includes(["wordbook/2", "wordbook/3"], doc.spec)) {
           const input = doc._words!;
           const content = _.map(input, (src: WordModel) => {
             const w = createWordModel();
@@ -391,7 +393,13 @@ const createWordBookModel = () => {
             return w;
           });
           doc._words = content;
-          doc.spec = "wordbook/3";
+          doc.spec = "wordbook/4";
+        }
+
+        if (doc.spec === "wordbook/4") {
+          // it is the last spec we can handle
+        } else {
+          throw `unknown spec. ${doc.spec} cannot proceed.`;
         }
 
         // reset each field if possible
