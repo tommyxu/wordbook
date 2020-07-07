@@ -187,13 +187,22 @@ interface WbStarTogglerProps {
   onClick?: (evt: { name?: string }) => void;
 }
 const WbStarTogglerStyles = {
-  icon: (props: WbStarTogglerProps) =>
-    !props.checked
+  icon: (props: WbStarTogglerProps) => ({
+    "&: hover": {
+      color: "goldenrod",
+      opacity: 0.9,
+    },
+    border: 0,
+    ...(!props.checked
       ? {
           opacity: 0.4,
         }
-      : {},
+      : {
+          color: "gold",
+        }),
+  }),
 };
+
 const WbStarToggler = (props: WbStarTogglerProps) => {
   const { checked, className, name, onClick } = props;
   const clickCallback = useCallback(() => {
@@ -203,12 +212,7 @@ const WbStarToggler = (props: WbStarTogglerProps) => {
   }, [onClick, name]);
   return (
     <span
-      className={clsx(
-        className,
-        "btn",
-        checked ? "text-secondary" : "text-muted",
-        { "text-secondary": !checked }
-      )}
+      className={clsx(className, "btn")}
       css={WbStarTogglerStyles.icon(props)}
       onClick={clickCallback}
     >

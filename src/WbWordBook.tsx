@@ -395,7 +395,7 @@ const WbWordCardViewModelControl = () => {
         <ToggleButton
           key={idx}
           type="radio"
-          variant="outline-primary"
+          variant="outline-dark"
           name="radio"
           value={radio.value}
           onChange={(evt: React.ChangeEvent<any>) =>
@@ -439,14 +439,14 @@ const WbWordBookViewControl = () => {
         <FaEye />
       </ToggleButton> */}
       <ToggleButton
-        variant="outline-primary"
+        variant="outline-dark"
         value="immerseMode"
         onChange={toggleImmerseModeCallback}
       >
         <FaVrCardboard />
       </ToggleButton>
       <ToggleButton
-        variant="outline-primary"
+        variant="outline-dark"
         value="filterStarred"
         onChange={() => toggleFilterStarred()}
       >
