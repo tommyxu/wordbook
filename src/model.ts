@@ -631,11 +631,16 @@ const createWordBookListModel = () => {
       state.books = payload;
     }),
     loadBooks: thunk(async (actions, payload, helper) => {
-      const resp = await fetch(`${process.env.PUBLIC_URL}/api/books`);
-      const doc = await resp.json();
-      actions.setBooks(
-        (doc as ApiResponse).data as Array<WordBookOverviewModel>
-      );
+      const url = `${process.env.PUBLIC_URL}/api/books`;
+      try {
+        const resp = await fetch(url);
+        const doc = await resp.json();
+        actions.setBooks(
+          (doc as ApiResponse).data as Array<WordBookOverviewModel>
+        );
+      } catch (err) {
+        log.error(err);
+      }
     }),
 
     templateId: "",

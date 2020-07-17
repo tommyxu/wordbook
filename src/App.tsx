@@ -29,6 +29,10 @@ const store = (function initAppStore() {
 
 log.info("store created");
 
+function Dummy() {
+  return <div>ok</div>;
+}
+
 // *** App Root-Component
 function App() {
   return (
@@ -38,22 +42,6 @@ function App() {
         <WbWordBooksPage path="/pages/books" />
         <WbWordBookPage path="/pages/books/:bookName" />
       </Router>
-      {/*
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.tsx</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-        */}
     </StoreProvider>
   );
 }
