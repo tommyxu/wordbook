@@ -5,7 +5,6 @@ import { jsx, css } from "@emotion/core";
 import React, { useEffect, useCallback, useRef } from "react";
 
 import log from "loglevel";
-import moment from "moment";
 import _ from "lodash";
 
 import Button from "react-bootstrap/Button";
@@ -19,6 +18,7 @@ import { useStoreActions, useStoreState } from "./model";
 import { RouteComponentProps } from "@reach/router";
 import { ConfirmDialog } from "./CommonComponents";
 import Container from "react-bootstrap/Container";
+import formatRelative from "date-fns/formatRelative";
 
 type WbWordBooksProps = {} & RouteComponentProps;
 
@@ -197,7 +197,7 @@ const WbWordBooks = (props: WbWordBooksProps) => {
               </Card.Body>
               <Card.Footer>
                 <div className="d-flex justify-content-end">
-                  {moment(book.version).format("llll")}
+                  {formatRelative(book.version, new Date())}
                 </div>
               </Card.Footer>
             </Card>
