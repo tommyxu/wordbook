@@ -6,7 +6,7 @@ import { jsx, css } from "@emotion/core";
 
 import { Link } from "@reach/router";
 
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef, useEffect, FormEvent } from "react";
 
 import clsx from "clsx";
 
@@ -225,31 +225,37 @@ interface WbWordEditorProps {
 
 const WbWordEditor = (props: WbWordEditorProps) => {
   const { onSearch } = props;
+
   const wordNameRef = useRef<HTMLInputElement>(null);
+
   const fields = useStoreState((state) => state.wordbook.editor.fields);
   const setValues = useStoreActions(
     (actions) => actions.wordbook.editor.setValues
   );
-  const addNewWord = useStoreActions((actions) => actions.wordbook.saveWord);
   const clearFields = useStoreActions(
     (actions) => actions.wordbook.editor.clearValues
   );
+
+  const addNewWord = useStoreActions((actions) => actions.wordbook.saveWord);
   const addNewWordCallback = useCallback(() => {
     if (fields.name) {
       addNewWord(fields);
       clearFields();
     }
   }, [addNewWord, clearFields, fields]);
+
   const searchCallback = useCallback(() => {
     onSearch(fields.name);
-  }, [onSearch, fields]);
+  }, [onSearch, fields.name]);
   const detectEnter = useCallback(
     (evt: React.KeyboardEvent<HTMLInputElement>) => {
       if (evt.keyCode === 13) {
         onSearch(fields.name);
+        evt.preventDefault();
+        evt.stopPropagation();
       }
     },
-    [onSearch, fields]
+    [onSearch, fields.name]
   );
   const clearInput = useCallback(
     (evt) => {
@@ -274,7 +280,10 @@ const WbWordEditor = (props: WbWordEditorProps) => {
     (actions) => actions.wordbook.locatePointer
   );
   const locatePointerCallback = useCallback(() => {
-    locatePointer(_.trim(fields.name));
+    const name = _.trim(fields.name);
+    if (name) {
+      locatePointer(name);
+    }
   }, [locatePointer, fields]);
 
   useEffect(() => {
@@ -282,17 +291,17 @@ const WbWordEditor = (props: WbWordEditorProps) => {
       clearDirectSearch();
       onSearch(fields.name);
     }
-  }, [directSearch, clearDirectSearch, fields, onSearch]);
+  }, [directSearch, clearDirectSearch, fields, fields.name, onSearch]);
 
   return (
-    <Form>
+    <Form
+      onSubmit={(evt: FormEvent<HTMLElement>) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+      }}
+    >
       <Form.Group controlId="wordName">
         <Form.Label>Word</Form.Label>
-        {/* 
-          <Form.Text className="text-muted">
-            We'll never share your email with anyone else.
-          </Form.Text> 
-          */}
         <InputGroup>
           <Form.Control
             type="text"
@@ -301,7 +310,7 @@ const WbWordEditor = (props: WbWordEditorProps) => {
             ref={wordNameRef}
             value={fields.name}
             onChange={(evt) => setValues({ name: evt.target.value })}
-            onKeyUp={detectEnter}
+            onKeyDown={detectEnter}
           />
           <Form.Control.Feedback type="invalid">
             Please choose a username.
@@ -352,8 +361,9 @@ const WbWordEditor = (props: WbWordEditorProps) => {
       <div className="text-center">
         <Button
           as="input"
-          type="submit"
+          type="button"
           value="Save"
+          css={{ minWidth: "6rem" }}
           readOnly
           onClick={addNewWordCallback}
         />
