@@ -39,6 +39,8 @@ const WbWordBookSearchOps = () => {
 interface WbWordBookSearchModel {
   wordQuery: string;
   setWordQuery: Action<WbWordBookSearchModel, string>;
+  searching: boolean;
+  setSearching: Action<WbWordBookSearchModel, boolean>;
   result: Array<WordModel>;
   setResult: Action<WbWordBookSearchModel, Array<WordModel>>;
 }
@@ -49,6 +51,10 @@ const useWbWordBookSearchModel = createComponentStore<WbWordBookSearchModel>({
     state.wordQuery = wordQuery;
   }),
   result: [],
+  searching: false,
+  setSearching: action((state, searching: boolean) => {
+    state.searching = searching;
+  }),
   setResult: action((state, result) => {
     state.result = result;
   }),
@@ -57,16 +63,22 @@ const useWbWordBookSearchModel = createComponentStore<WbWordBookSearchModel>({
 export const WbWordBookSearch = () => {
   const [state, actions] = useWbWordBookSearchModel();
   const searchWord = useStoreActions((actions) => actions.wordbook.searchWord);
+  const buildSearchIndex = useStoreActions(
+    (actions) => actions.wordbook.buildSearchIndex
+  );
 
   const handleQuery = useCallback(
     (evt) => {
-      actions.setResult([]);
       evt.stopPropagation();
       evt.preventDefault();
+
+      actions.setResult([]);
+      actions.setSearching(true);
       const result = searchWord(state.wordQuery);
+      actions.setSearching(false);
       actions.setResult(result);
     },
-    [searchWord, state]
+    [searchWord, state, actions]
   );
 
   const wordQueryRef = useRef<HTMLInputElement>(null);
@@ -75,6 +87,7 @@ export const WbWordBookSearch = () => {
     if (wordQueryRef.current) {
       _.delay(() => wordQueryRef.current!.focus(), 100);
     }
+    buildSearchIndex();
   }, [wordQueryRef]);
 
   return (
@@ -92,7 +105,9 @@ export const WbWordBookSearch = () => {
             //   aria-describedby="basic-addon2"
           />
           <InputGroup.Append>
-            <Button variant="outline-primary">Search</Button>
+            <Button variant="outline-primary">
+              {state.searching ? "Searching ..." : "Search"}
+            </Button>
           </InputGroup.Append>
         </InputGroup>
       </Form>

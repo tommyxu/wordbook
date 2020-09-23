@@ -62,7 +62,7 @@ import {
   ForwardStepActionMode,
 } from "./model";
 
-import { WordCardViewModel } from "./model";
+import { WordCardViewModel, WordBookNavStepType } from "./model";
 import { IconType } from "react-icons/lib";
 
 import type { RouteComponentProps } from "@reach/router";
@@ -83,41 +83,22 @@ const WbWordBookNav = () => {
   const stepperMode = useStoreState(
     (state) => state.wordbook.uiState.stepperMode
   );
-  const setStepperMode = useStoreActions(
-    (state) => state.wordbook.uiState.setStepperMode
-  );
   const forwardStepCallback = useCallback(() => {
-    if (immerseMode) {
-      if (stepperMode === ForwardStepActionMode.MOVE_FORWARD) {
-        setStepperMode(ForwardStepActionMode.SHOW_CARD);
-        offsetPointer(1);
-      } else if (stepperMode === ForwardStepActionMode.SHOW_CARD) {
-        setStepperMode(ForwardStepActionMode.MOVE_FORWARD);
-      }
-    } else {
-      offsetPointer(1);
-    }
-  }, [immerseMode, stepperMode, setStepperMode, offsetPointer]);
+    offsetPointer(WordBookNavStepType.FORWARD);
+  }, [offsetPointer]);
   return (
     <Pagination size="lg" className="mb-2">
-      <Pagination.Item onClick={() => offsetPointer(-1e5)}>
+      <Pagination.Item onClick={() => offsetPointer(WordBookNavStepType.FISRT)}>
         <MdFirstPage />
       </Pagination.Item>
-      <Pagination.First onClick={() => offsetPointer(-10)} />
-      <Pagination.Prev
-        onClick={() => offsetPointer(-1)}
-        css={{
-          textAlign: "center",
-          minWidth: "4.5rem",
-        }}
+      <Pagination.First
+        onClick={() => offsetPointer(WordBookNavStepType.FAST_BACKWARD)}
       />
-      <PageItem
-        disabled
-        css={{
-          textAlign: "center",
-          minWidth: "8rem",
-        }}
-      >
+      <Pagination.Prev
+        onClick={() => offsetPointer(WordBookNavStepType.BACKWARD)}
+        className="text-center mw-4r"
+      />
+      <PageItem disabled className="text-center mw-6r">
         <small>
           {pointer + 1} / {wordSize}
         </small>
@@ -127,10 +108,7 @@ const WbWordBookNav = () => {
           immerseMode && stepperMode === ForwardStepActionMode.MOVE_FORWARD
         }
         onClick={forwardStepCallback}
-        css={{
-          textAlign: "center",
-          minWidth: "4.5rem",
-        }}
+        className="text-center mw-4r"
       >
         <MdNavigateNext />
       </Pagination.Item>
@@ -424,6 +402,9 @@ const WbWordBookViewControl = () => {
   const toggleFilterStarred = useStoreActions(
     (actions) => actions.wordbook.toggleFilterStarred
   );
+  const toggleFilterStarredCallback = useCallback(() => {
+    toggleFilterStarred();
+  }, [toggleFilterStarred]);
 
   const immerseMode = useStoreState(
     (state) => state.wordbook.uiState.immerseMode
@@ -458,7 +439,7 @@ const WbWordBookViewControl = () => {
       <ToggleButton
         variant="outline-dark"
         value="filterStarred"
-        onChange={() => toggleFilterStarred()}
+        onChange={toggleFilterStarredCallback}
       >
         <FaStar />
       </ToggleButton>
@@ -480,7 +461,6 @@ const WbWordBookOps = (props: WbWordBookOpsProps) => {
   const toggleSearchFrameVisible = useStoreActions(
     (actions) => actions.wordbook.uiState.toggleSearchFrameVisible
   );
-  const searchWord = useStoreActions((actions) => actions.wordbook.searchWord);
   const cloudUpload = useStoreActions(
     (actions) => actions.wordbook.cloudUpload
   );

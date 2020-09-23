@@ -49,8 +49,8 @@
 }
 
 .WbWordCard__deleteButton {
-  position: absolute;
-  right: 1rem;
+  /* position: absolute; */
+  /* right: 1rem; */
   background-color: transparent;
-  border: 0;
+  /* border: 0; */
 }

@@ -63,6 +63,19 @@ export const WbWordCard = (props: WbWordCardProps) => {
     [onWordSearch]
   );
 
+  const responsiveSize = (name: string) => {
+    const len = name.length;
+    if (len > 45) {
+      return "h4";
+    } else if (len > 35) {
+      return "h3";
+    } else if (len > 20) {
+      return "h2";
+    } else {
+      return "h1";
+    }
+  };
+
   return (
     <SwitchTransition>
       <CSSTransition
@@ -80,6 +93,7 @@ export const WbWordCard = (props: WbWordCardProps) => {
                 css={{
                   cursor: "pointer",
                 }}
+                className="d-flex flex-row-reverse align-items-start"
                 onClick={wordClickHandler}
                 onDoubleClick={wordSearchHandler}
               >
@@ -92,8 +106,8 @@ export const WbWordCard = (props: WbWordCardProps) => {
                     <FaTimes />
                   </Button>
                 )}
-                <div className="d-flex align-items-center">
-                  <span className="h1">
+                <div className="d-flex flex-grow-1">
+                  <span className={responsiveSize(word.name)}>
                     {viewModel === WordCardViewModel.Full ||
                     viewModel === WordCardViewModel.WordOnly
                       ? word.name

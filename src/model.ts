@@ -1,46 +1,77 @@
-import { nanoid } from "nanoid";
-import _ from "lodash";
-import log from "loglevel";
-
 import {
   action,
+  actionOn,
   computed,
   createTypedHooks,
   thunk,
   thunkOn,
-  actionOn,
 } from "easy-peasy";
-import { Action, Computed, ActionOn, ThunkOn, Thunk, State } from "easy-peasy";
-
+import { Action, ActionOn, Computed, State, Thunk, ThunkOn } from "easy-peasy";
 import FlexSearch from "flexsearch";
-import flexsearch_en from "flexsearch/lang/en.min.js";
+import _ from "lodash";
+import log from "loglevel";
+import { nanoid } from "nanoid";
 
-const index = FlexSearch.create({
-  stemmer: flexsearch_en,
-  filter: flexsearch_en,
-  // profile: "match",
-  // encode: "extra",
-  doc: {
-    id: "id",
-    field: {
-      name: {
-        encode: "simple",
-        tokenize: "forward",
+import type { Index } from "flexsearch";
+import flexsearch_en from "flexsearch/lang/en.min.js";
+import { Stats } from "fs";
+
+// const index = FlexSearch.create({
+//   stemmer: flexsearch_en,
+//   filter: flexsearch_en,
+//   // profile: "match",
+//   // encode: "extra",
+//   doc: {
+//     id: "id",
+//     field: {
+//       name: {
+//         encode: "simple",
+//         tokenize: "forward",
+//       },
+//       remark: {
+//         encode: "simple",
+//         tokenize: "forward",
+//       },
+//       translation: {
+//         encode: false,
+//         tokenize: function (str: string) {
+//           return str.replace(/[\x20-\x7F]/g, "").split("");
+//         },
+//       },
+//     }, // ["name", "remark", "example", "translation"],
+//   },
+// });
+
+class IndexService {
+  index: Index<WordModel>;
+  constructor() {
+    this.index = this.create_index();
+  }
+  rebuild(words: Array<WordModel>) {
+    this.index = this.create_index();
+    words.forEach((w) => this.index.add(w));
+    log.info(this.index.info());
+  }
+
+  search(query: string, options: object = {}) {
+    return this.index.search(query, options);
+  }
+  create_index() {
+    return FlexSearch.create({
+      // profile: 'score',
+      stemmer: flexsearch_en,
+      tokenize: "forward",
+      threshold: 0,
+      doc: {
+        id: "id",
+        field: ["name", "remark", "example"],
       },
-      remark: {
-        encode: "simple",
-        tokenize: "forward",
-      },
-      translation: {
-        encode: false,
-        tokenize: function (str: string) {
-          return str.replace(/[\x20-\x7F]/g, "").split("");
-        },
-      },
-    }, // ["name", "remark", "example", "translation"],
-  },
-});
-log.info("index.info", index.info());
+    }) as Index<WordModel>;
+    // log.info("index.info", this.index.info());
+  }
+}
+
+const indexService = new IndexService();
 
 // *** Model
 export interface WordModel {
@@ -64,6 +95,15 @@ export enum WordCardViewModel {
   DefinitionsOnly,
 }
 
+export enum WordBookNavStepType {
+  FISRT = -10000,
+  FORWARD = 1,
+  FAST_FORWARD = 10,
+  BACKWARD = -1,
+  FAST_BACKWARD = -10,
+  LAST = 10000,
+}
+
 export interface WordBookModel {
   spec: string;
 
@@ -84,7 +124,7 @@ export interface WordBookModel {
   currentWordSize: Computed<WordBookModel, number>;
 
   pointer: number;
-  offsetPointer: Action<WordBookModel, number>;
+  offsetPointer: Action<WordBookModel, WordBookNavStepType>;
   setPointer: Action<WordBookModel, number>;
   locatePointer: Thunk<WordBookModel, string>;
 
@@ -95,6 +135,8 @@ export interface WordBookModel {
   deleteCurrentWord: Action<WordBookModel>;
 
   saveWord: Action<WordBookModel, Partial<WordModel>>;
+
+  buildSearchIndex: Thunk<WordBookModel, undefined>;
   searchWord: Thunk<WordBookModel, string>;
 
   editor: WordEditorModel;
@@ -150,8 +192,6 @@ export interface WordBookUiState {
   toggleImmerseMode: Action<WordBookUiState>;
 
   stepperMode: ForwardStepActionMode;
-  setStepperMode: Action<WordBookUiState, ForwardStepActionMode>;
-
   cardViewModel: WordCardViewModel;
   setCardViewModel: Action<WordBookUiState, WordCardViewModel>;
   toggleCardDefinitionVisible: Action<WordBookUiState>;
@@ -251,6 +291,9 @@ const createWordBookModel = () => {
       Math.min(p === undefined ? 1e8 : p, filterWordSize - 1),
       0
     );
+    if (state.uiState.immerseMode) {
+      state.uiState.stepperMode = ForwardStepActionMode.SHOW_CARD;
+    }
   };
 
   const getCurrentWord = (state: State<WordBookModel>) => {
@@ -303,8 +346,18 @@ const createWordBookModel = () => {
     currentWord: computed((state) => {
       return getCurrentWord(state);
     }),
-    offsetPointer: action((state, value) => {
-      setNewPointer(state, state.pointer + value);
+    offsetPointer: action((state, value: WordBookNavStepType) => {
+      let move = true;
+      if (value === WordBookNavStepType.FORWARD) {
+        if (
+          state.uiState.immerseMode &&
+          state.uiState.stepperMode !== ForwardStepActionMode.MOVE_FORWARD
+        ) {
+          state.uiState.stepperMode = ForwardStepActionMode.MOVE_FORWARD;
+          move = false;
+        }
+      }
+      move && setNewPointer(state, state.pointer + value);
     }),
     setPointer: action((state, pos) => {
       state.filterStarred = false;
@@ -388,10 +441,14 @@ const createWordBookModel = () => {
         setNewPointer(state);
       }
     }),
-    searchWord: thunk((actions, query, helper) => {
+
+    buildSearchIndex: thunk((actions, payload, helper) => {
       const wordsDoc = helper.getState()._words;
-      index.add(wordsDoc); // build index
-      const result = index.search(query, { limit: 10 });
+      indexService.rebuild(wordsDoc);
+    }),
+
+    searchWord: thunk((actions, query, helper) => {
+      const result = indexService.search(query, { limit: 20 });
       // log.info(result);
       return result;
     }),
@@ -465,7 +522,8 @@ const createWordBookModel = () => {
 
     loadDefault: thunk((actions, payload, helper) => {
       // if (helper.getState()._words.length === 0) {
-      //   actions.saveWord({ name: "fluster", remark: "fluster detail example" });
+      //   actions.saveWord({ name: "fluster", remark: "fluster detail
+      //   example" });
       //   actions.saveWord({
       //     name: "resolute",
       //     remark: "resolute detail example",
@@ -571,16 +629,14 @@ const createWordBookModel = () => {
         state.directSearch = false;
       }),
 
+      stepperMode: ForwardStepActionMode.SHOW_CARD,
+
       immerseMode: false,
       toggleImmerseMode: action((state) => {
         state.immerseMode = !state.immerseMode;
         if (state.immerseMode) {
           state.stepperMode = ForwardStepActionMode.SHOW_CARD;
         }
-      }),
-      stepperMode: ForwardStepActionMode.SHOW_CARD,
-      setStepperMode: action((state, mode) => {
-        state.stepperMode = mode;
       }),
 
       cardViewModel: WordCardViewModel.Full,
