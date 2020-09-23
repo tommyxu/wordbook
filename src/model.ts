@@ -801,17 +801,6 @@ const createAppModel = () => {
   return appModel;
 };
 
-// createComponentStore State Actions
-
-// enum WordType {
-//   n = "n",
-//   adj = "adj",
-//   adv = "adv",
-//   v = "v",
-//   vt = "vt",
-//   vi = "vi",
-// }
-
 const typedHooks = createTypedHooks<AppModel>();
 
 export const useStoreActions = typedHooks.useStoreActions;

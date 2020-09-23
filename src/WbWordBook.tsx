@@ -112,8 +112,10 @@ const WbWordBookNav = () => {
       >
         <MdNavigateNext />
       </Pagination.Item>
-      <Pagination.Last onClick={() => offsetPointer(10)} />
-      <Pagination.Item onClick={() => offsetPointer(1e5)}>
+      <Pagination.Last
+        onClick={() => offsetPointer(WordBookNavStepType.FAST_FORWARD)}
+      />
+      <Pagination.Item onClick={() => offsetPointer(WordBookNavStepType.LAST)}>
         <MdLastPage />
       </Pagination.Item>
     </Pagination>
