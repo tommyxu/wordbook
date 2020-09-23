@@ -636,6 +636,9 @@ const createWordBookModel = () => {
         state.immerseMode = !state.immerseMode;
         if (state.immerseMode) {
           state.stepperMode = ForwardStepActionMode.SHOW_CARD;
+          if (state.cardViewModel === WordCardViewModel.Full) {
+            state.cardViewModel = WordCardViewModel.WordOnly;
+          }
         }
       }),
 
